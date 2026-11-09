@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for AdReach classifieds, subscriptions, administration, and distribution queue
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: ads
+    description: Advertisement submission and review
+  - name: account
+    description: User account and subscription operations
+  - name: admin
+    description: Administrator-only review and distribution queue
+  - name: storage
+    description: Image upload and serving
 paths:
   /healthz:
     get:
@@ -24,6 +32,314 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /plans:
+    get:
+      operationId: listPlans
+      tags: [account]
+      summary: List subscription plans
+      responses:
+        "200":
+          description: Available plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+  /account:
+    get:
+      operationId: getAccount
+      tags: [account]
+      summary: Get the signed-in user's dashboard
+      responses:
+        "200":
+          description: Account dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountDashboard"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /ads:
+    post:
+      operationId: createAd
+      tags: [ads]
+      summary: Submit an advertisement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdInput"
+      responses:
+        "201":
+          description: Advertisement submitted for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "402":
+          description: Free submissions are used and an active subscription is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "400":
+          description: Invalid ad data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /subscriptions/mock-checkout:
+    post:
+      operationId: startMockCheckout
+      tags: [account]
+      summary: Activate a mock subscription for development
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanPurchaseInput"
+      responses:
+        "201":
+          description: Mock subscription activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "400":
+          description: Invalid plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /subscriptions/cancel:
+    post:
+      operationId: cancelSubscription
+      tags: [account]
+      summary: Cancel the current subscription
+      responses:
+        "200":
+          description: Subscription cancellation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: No active subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get administrator queue summary
+      responses:
+        "200":
+          description: Summary counts and latest queue events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/ads:
+    get:
+      operationId: listAdminAds
+      tags: [admin]
+      summary: List ads for administrator review
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, active, rejected, all]
+      responses:
+        "200":
+          description: Ads with owner and tier information
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAd"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/ads/{id}/review:
+    patch:
+      operationId: reviewAd
+      tags: [admin]
+      summary: Approve or reject a submitted ad
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdReviewInput"
+      responses:
+        "200":
+          description: Updated advertisement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Advertisement not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/webhook-logs:
+    get:
+      operationId: listWebhookLogs
+      tags: [admin]
+      summary: List ad submission and distribution events
+      responses:
+        "200":
+          description: Event queue and webhook log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DistributionEvent"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned image upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Failed to generate upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve an uploaded ad image
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +349,238 @@ components:
           type: string
       required:
         - status
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Plan:
+      type: object
+      required: [id, name, amountK, currency, interval, description]
+      properties:
+        id:
+          type: string
+          enum: [weekly, monthly]
+        name:
+          type: string
+        amountK:
+          type: integer
+        currency:
+          type: string
+          enum: [ZMK]
+        interval:
+          type: string
+          enum: [week, month]
+        description:
+          type: string
+    Subscription:
+      type: object
+      required: [id, planId, status, amountK, currency, startedAt, expiresAt]
+      properties:
+        id:
+          type: string
+        planId:
+          type: string
+          enum: [weekly, monthly]
+        status:
+          type: string
+          enum: [active, canceled, expired]
+        amountK:
+          type: integer
+        currency:
+          type: string
+          enum: [ZMK]
+        startedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        canceledAt:
+          type: [string, "null"]
+          format: date-time
+    Ad:
+      type: object
+      required: [id, userId, userName, email, title, description, link, imagePath, status, planId, createdAt, approvedAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+        email:
+          type: string
+          format: email
+        title:
+          type: string
+        description:
+          type: string
+        link:
+          type: string
+          format: uri
+        imagePath:
+          type: [string, "null"]
+        status:
+          type: string
+          enum: [pending, active, rejected]
+        planId:
+          type: string
+          enum: [free, weekly, monthly]
+        createdAt:
+          type: string
+          format: date-time
+        approvedAt:
+          type: [string, "null"]
+          format: date-time
+        adminNote:
+          type: [string, "null"]
+    AdminAd:
+      allOf:
+        - $ref: "#/components/schemas/Ad"
+        - type: object
+          required: [userTier]
+          properties:
+            userTier:
+              type: string
+              enum: [free, weekly, monthly]
+    AdInput:
+      type: object
+      required: [userName, title, description, link]
+      properties:
+        userName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 3000
+        link:
+          type: string
+          format: uri
+        imagePath:
+          type: [string, "null"]
+    PlanPurchaseInput:
+      type: object
+      required: [planId]
+      properties:
+        planId:
+          type: string
+          enum: [weekly, monthly]
+    AdReviewInput:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        note:
+          type: string
+          maxLength: 1000
+    AccountDashboard:
+      type: object
+      required: [user, ads, plans, freeAdsUsed, freeAdsLimit, canSubmit, events]
+      properties:
+        user:
+          type: object
+          required: [userId, name, email, role]
+          properties:
+            userId:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            role:
+              type: string
+              enum: [customer, admin]
+        ads:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ad"
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/Plan"
+        subscription:
+          oneOf:
+            - $ref: "#/components/schemas/Subscription"
+            - type: "null"
+        freeAdsUsed:
+          type: integer
+        freeAdsLimit:
+          type: integer
+        canSubmit:
+          type: boolean
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistributionEvent"
+    DistributionEvent:
+      type: object
+      required: [id, adId, eventType, status, payload, createdAt]
+      properties:
+        id:
+          type: string
+        adId:
+          type: string
+        eventType:
+          type: string
+          enum: [ad.submitted, ad.approved]
+        status:
+          type: string
+          enum: [queued, ready, delivered, failed]
+        payload:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    AdminOverview:
+      type: object
+      required: [pendingAds, activeAds, rejectedAds, queuedEvents, latestEvents]
+      properties:
+        pendingAds:
+          type: integer
+        activeAds:
+          type: integer
+        rejectedAds:
+          type: integer
+        queuedEvents:
+          type: integer
+        latestEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistributionEvent"
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
 
