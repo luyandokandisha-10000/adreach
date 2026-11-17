@@ -5,9 +5,9 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BadgeCheck, Check, ChevronDown, CircleHelp,
-  Clock3, Copy, ExternalLink, FileImage, ImagePlus, Instagram, Link2, LoaderCircle, LockKeyhole,
-  Menu, Megaphone, MessageSquareText, MoreHorizontal, Plus, RefreshCw, Send, ShieldCheck,
-  Sparkles, X, XCircle, Zap,
+  Clock3, Copy, Download, ExternalLink, FileImage, Globe, ImagePlus, Instagram, Link2,
+  LoaderCircle, LockKeyhole, Menu, Megaphone, MessageSquareText, MoreHorizontal, Plus,
+  RefreshCw, Search, Send, Share2, ShieldCheck, Smartphone, Sparkles, Users, X, XCircle, Zap,
 } from 'lucide-react';
 import {
   getGetAccountQueryKey, getGetAdminOverviewQueryKey, getListAdminAdsQueryKey,
@@ -27,6 +27,34 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path; }
+
+export interface Community {
+  id: string;
+  name: string;
+  platform: 'facebook' | 'whatsapp' | 'instagram' | 'tiktok' | 'linkedin' | 'telegram' | 'x';
+  category: string;
+  members: string;
+  url: string;
+  description: string;
+  isMainChannel?: boolean;
+}
+
+export const DEFAULT_COMMUNITIES: Community[] = [
+  { id: 'main-adreach-fb', name: 'AdReach Zambia Official Facebook Page', platform: 'facebook', category: 'General Business', members: '125,000+ followers', url: 'https://www.facebook.com/adreachzambia', description: 'Main verified Facebook broadcast page featuring verified Zambian businesses.', isMainChannel: true },
+  { id: 'main-adreach-wa', name: 'AdReach Zambia Daily Deals WhatsApp Channel', platform: 'whatsapp', category: 'Buy & Sell', members: '48,500+ followers', url: 'https://whatsapp.com/channel/0029VaAdReachZm', description: 'Direct-to-phone daily business promotions across Zambia.', isMainChannel: true },
+  { id: 'main-adreach-ig', name: 'AdReach Zambia Instagram (@adreach.zm)', platform: 'instagram', category: 'General Business', members: '72,000+ followers', url: 'https://www.instagram.com/adreach.zm', description: 'Visual carousel spotlights and story features for local brands.', isMainChannel: true },
+  { id: 'main-adreach-tt', name: 'AdReach Zambia TikTok Spotlight', platform: 'tiktok', category: 'General Business', members: '95,000+ followers', url: 'https://www.tiktok.com/@adreachzambia', description: 'High-reach short-form video highlights and featured shoutouts.', isMainChannel: true },
+  { id: 'main-adreach-li', name: 'AdReach Zambia LinkedIn Commercial Network', platform: 'linkedin', category: 'Tech & Services', members: '34,000+ connections', url: 'https://www.linkedin.com/company/adreach-zambia', description: 'B2B promotions, corporate suppliers, and professional Zambian services.', isMainChannel: true },
+  { id: 'grp-lusaka-biz', name: 'Lusaka Business Hub & Market', platform: 'facebook', category: 'General Business', members: '185,000 members', url: 'https://www.facebook.com/groups/lusakabusinesshub', description: 'Lusaka commerce hub for retail, services, and trade.' },
+  { id: 'grp-zm-buysell', name: 'Zambia Buy, Sell & Swap Everything', platform: 'facebook', category: 'Buy & Sell', members: '340,000 members', url: 'https://www.facebook.com/groups/zambiabuysellswap', description: 'Nationwide consumer exchange for electronics, fashion, and goods.' },
+  { id: 'grp-copperbelt-traders', name: 'Copperbelt Entrepreneurs & Traders (Kitwe / Ndola)', platform: 'facebook', category: 'General Business', members: '95,000 members', url: 'https://www.facebook.com/groups/copperbelttraders', description: 'Connecting businesses and consumers across Kitwe, Ndola, and Chingola.' },
+  { id: 'grp-zm-realestate', name: 'Lusaka Real Estate, Plots & Car Bazaar', platform: 'facebook', category: 'Real Estate & Motors', members: '140,000 members', url: 'https://www.facebook.com/groups/lusakapropertyandcars', description: 'Targeted market for property rentals, plots, and vehicle sales.' },
+  { id: 'grp-zm-agri', name: 'Agriculture & Farming Market Zambia', platform: 'facebook', category: 'Agriculture', members: '115,000 members', url: 'https://www.facebook.com/groups/zambiafarmingmarket', description: 'Farmers, produce suppliers, poultry, livestock, and agro-equipment.' },
+  { id: 'grp-wa-lusaka-market', name: 'Lusaka Quick Market WhatsApp Community', platform: 'whatsapp', category: 'Buy & Sell', members: '15,000 members', url: 'https://chat.whatsapp.com/LusakaQuickMarketCommunity', description: 'Sub-neighborhood shopping network for rapid buyer inquiry and instant chat.' },
+  { id: 'grp-wa-tech-freelance', name: 'Tech, Creative & Freelancers Zambia', platform: 'whatsapp', category: 'Tech & Services', members: '8,500 members', url: 'https://chat.whatsapp.com/TechCreativeZambia', description: 'Developers, graphic designers, digital marketers, and consultants.' },
+  { id: 'grp-zm-smallbiz', name: 'Zambia Small Business Network (ZSBN)', platform: 'facebook', category: 'General Business', members: '78,000 members', url: 'https://www.facebook.com/groups/zsbnnetwork', description: 'Empowering SME founders, wholesalers, and startup creators.' },
+  { id: 'grp-tele-zm-deals', name: 'Zambia Deals & Classifieds Telegram', platform: 'telegram', category: 'Buy & Sell', members: '22,000 members', url: 'https://t.me/ZambiaDealsOfficial', description: 'Fast-updating announcements channel with immediate push notifications.' },
+];
 
 const appearance = {
   theme: shadcn,
@@ -83,26 +111,87 @@ function Brand({ inverse = false }: { inverse?: boolean }) {
 function ButtonLink({ href, children, kind = 'primary', className = '', ...props }: { href: string; children: ReactNode; kind?: 'primary' | 'outline' | 'quiet'; className?: string; [key: string]: any }) {
   return <Link href={href} className={`button button-${kind} ${className}`} {...props}>{children}</Link>;
 }
+
+function usePwaInstall() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const installApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    }
+  };
+
+  return { isInstallable, installApp };
+}
+
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  return <header className="site-header"><div className="nav-wrap"><Brand /><nav className={`public-nav ${menuOpen ? 'is-open' : ''}`}><a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a><a href="#faq" onClick={() => setMenuOpen(false)}>FAQs</a></nav><div className="nav-actions"><Link href="/sign-in" className="signin-link">Sign in</Link><ButtonLink href="/sign-up" className="nav-cta">Start for free <ArrowRight size={15} /></ButtonLink></div><button className="menu-toggle" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)} data-testid="button-menu">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></div></header>;
+  const { isInstallable, installApp } = usePwaInstall();
+
+  return <header className="site-header"><div className="nav-wrap"><Brand /><nav className={`public-nav ${menuOpen ? 'is-open' : ''}`}><a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a><a href="#communities" onClick={() => setMenuOpen(false)}>Social Groups</a><a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a><a href="#faq" onClick={() => setMenuOpen(false)}>FAQs</a></nav><div className="nav-actions">{isInstallable && <button className="install-app-pill" onClick={installApp} title="Install AdReach Web App"><Download size={13} /> Install App</button>}<Link href="/sign-in" className="signin-link">Sign in</Link><ButtonLink href="/sign-up" className="nav-cta">Start for free <ArrowRight size={15} /></ButtonLink></div><button className="menu-toggle" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)} data-testid="button-menu">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></div></header>;
 }
+
 function Home() {
   return <div className="landing page-enter"><Header /><main>
     <section className="hero">
-      <div className="hero-left"><div className="eyebrow"><span className="eyebrow-dot" /> MADE FOR ZAMBIAN BUSINESSES</div><h1>Good work<br />deserves to be<br /><span>seen.</span></h1><p className="hero-copy">Submit your ad once, get featured across all our social media channels.</p><div className="hero-actions"><ButtonLink href="/sign-up">Get your first 5 ads free <ArrowRight size={17} /></ButtonLink><a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a></div><div className="hero-proof"><div className="proof-avatars"><span>MK</span><span>LK</span><span>CN</span></div><span>For the people building Zambia.</span></div></div>
-      <div className="hero-art"><div className="art-sun" /><div className="art-caption"><span>LOCAL BUSINESS</span><span>01 / 03</span></div><div className="art-phone"><div className="phone-top"><span className="mini-avatar">K</span><span><b>kapenta.kitchen</b><small>Lusaka, Zambia</small></span><MoreHorizontal size={16} /></div><div className="phone-photo"><div className="photo-tag">JUST OPENED</div><div className="photo-type">A little<br />taste of<br /><i>home.</i></div><div className="photo-stamp">K</div></div><div className="phone-buttons"><span><Instagram size={16} /></span><span><MessageSquareText size={16} /></span><span><Send size={15} /></span><span className="phone-bookmark">Save</span></div><p><b>kapenta.kitchen</b> Good food, good people. Come through this week.</p><div className="phone-lines" /></div><div className="floating-reach"><span className="reach-icon"><ArrowUpRight size={18} /></span><span><b>One submission</b><small>ready for more reach</small></span></div><span className="art-side-note">BUILT FOR YOUR NEXT CUSTOMER</span></div>
-      <div className="hero-bottomline"><span>ONE SIMPLE SUBMISSION</span><span>REVIEWED BY A REAL PERSON</span><span>MADE FOR LOCAL REACH</span></div>
+      <div className="hero-left"><div className="eyebrow"><span className="eyebrow-dot" /> MADE FOR ZAMBIAN BUSINESSES</div><h1>Good work<br />deserves to be<br /><span>seen.</span></h1><p className="hero-copy">Submit your ad once, get featured across our verified channels and top Zambian social media groups.</p><div className="hero-actions"><ButtonLink href="/sign-up">Get your first 5 ads free <ArrowRight size={17} /></ButtonLink><a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a></div><div className="hero-proof"><div className="proof-avatars"><span>MK</span><span>LK</span><span>CN</span></div><span>Targeting over 1,000,000+ local buyers across Zambia.</span></div></div>
+      <div className="hero-art"><div className="art-sun" /><div className="art-caption"><span>LOCAL BUSINESS</span><span>01 / 03</span></div><div className="art-phone"><div className="phone-top"><span className="mini-avatar">K</span><span><b>kapenta.kitchen</b><small>Lusaka, Zambia</small></span><MoreHorizontal size={16} /></div><div className="phone-photo"><div className="photo-tag">JUST OPENED</div><div className="photo-type">A little<br />taste of<br /><i>home.</i></div><div className="photo-stamp">K</div></div><div className="phone-buttons"><span><Instagram size={16} /></span><span><MessageSquareText size={16} /></span><span><Send size={15} /></span><span className="phone-bookmark">Save</span></div><p><b>kapenta.kitchen</b> Good food, good people. Come through this week.</p><div className="phone-lines" /></div><div className="floating-reach"><span className="reach-icon"><ArrowUpRight size={18} /></span><span><b>One submission</b><small>ready for multi-group reach</small></span></div><span className="art-side-note">BUILT FOR YOUR NEXT CUSTOMER</span></div>
+      <div className="hero-bottomline"><span>ONE SIMPLE SUBMISSION</span><span>POST TO MAIN CHANNELS & GROUPS</span><span>MADE FOR LOCAL REACH</span></div>
     </section>
-    <section className="social-strip"><span className="social-label">YOUR AD, READY FOR</span><span><Instagram size={17} /> Instagram</span><span><MessageSquareText size={17} /> Facebook</span><span><Zap size={16} /> TikTok</span><span className="social-note">We prepare your ad for distribution. Social posting is not automatic.</span></section>
-    <section className="steps-section" id="how-it-works"><div className="section-kicker">A BETTER WAY TO BE SEEN</div><div className="section-heading-row"><h2>Three steps.<br /><span>More eyes on you.</span></h2><p>No agency calls. No complicated campaign setup. Just a clear path from your idea to a reviewed ad.</p></div><div className="steps-grid">
-      <article className="step-item"><span className="step-index">01</span><div className="step-icon"><FileImage size={20} /></div><h3>Send us your ad</h3><p>Share your message, a photo and where people can find you. One form, done.</p></article>
-      <article className="step-item step-highlight"><span className="step-index">02</span><div className="step-icon"><ShieldCheck size={20} /></div><h3>We review it</h3><p>Our team checks every submission and lets you know what happens next.</p></article>
-      <article className="step-item"><span className="step-index">03</span><div className="step-icon"><ArrowUpRight size={20} /></div><h3>Get ready for reach</h3><p>Approved ads become ready-to-distribute events. You stay in the loop.</p></article>
-    </div><p className="honesty-note"><LockKeyhole size={14} /> Approval prepares your ad for distribution. We do not claim automatic posting to social networks.</p></section>
-     <section className="pricing-section" id="pricing"><div className="pricing-intro"><div className="section-kicker">STRAIGHT-UP PRICING</div><h2>Start free.<br /><span>Keep growing.</span></h2><p>Try AdReach with five free submissions. When you’re ready, choose a simple plan that fits your business.</p><div className="pricing-footnote"><Check size={15} /> No hidden fees. No long contracts.</div></div><div className="pricing-cards"><article className="price-card"><div className="price-label">A GOOD PLACE TO START</div><h3>Free</h3><div className="price-amount"><strong>K0</strong><span> / first 5 ads</span></div><p>Get your business in front of more people, one submission at a time.</p><ul><li><Check size={15} /> 5 ad submissions</li><li><Check size={15} /> Human review</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Start with 5 free ads <ArrowRight size={16} /></ButtonLink></article><article className="price-card price-featured"><span className="popular-label">MOST FLEXIBLE</span><div className="price-label">FOR THE WEEKLY PUSH</div><h3>Tier 1 · Weekly</h3><div className="price-amount"><strong>K20</strong><span> / week</span></div><p>Keep sharing your offers and announcements with a little more room.</p><ul><li><Check size={15} /> More ad submissions</li><li><Check size={15} /> Human review</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up">Choose weekly <ArrowRight size={16} /></ButtonLink></article><article className="price-card"><div className="price-label">FOR A STEADY PRESENCE</div><h3>Tier 2 · Monthly</h3><div className="price-amount"><strong>K100</strong><span> / month</span></div><p>Plan ahead and keep your business visible throughout the month.</p><ul><li><Check size={15} /> More ad submissions</li><li><Check size={15} /> Human review</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Choose monthly <ArrowRight size={16} /></ButtonLink></article></div><p className="price-disclaimer">All prices shown in Zambian Kwacha (ZMK). Pay easily via Mobile Money (Airtel, MTN, Zamtel) with instant WhatsApp verification.</p></section>
-    <section className="trust-band"><div className="trust-seal"><BadgeCheck size={23} /></div><div><span className="section-kicker">CLEAR FROM THE START</span><h2>Know where your ad stands.</h2></div><p>Submitted, under review, approved or needs a change. Your dashboard makes the next step easy to understand.</p><ButtonLink href="/sign-up" kind="outline">Create your account <ArrowRight size={16} /></ButtonLink></section>
-    <section className="faq-section" id="faq"><div className="faq-title"><div className="section-kicker">GOOD QUESTIONS</div><h2>Before you<br /><span>get started.</span></h2><a href="mailto:hello@adreach.co.zm">Still wondering? Talk to us <ArrowUpRight size={14} /></a></div><div className="faq-list"><details><summary>What happens after I submit an ad?<ChevronDown size={17} /></summary><p>Your ad appears in your dashboard as pending while our team reviews it. You’ll see when it is approved or if it needs a change.</p></details><details><summary>Does AdReach automatically post to social media?<ChevronDown size={17} /></summary><p>No. Approval creates an event that is ready for distribution. We do not claim that an ad is automatically posted to social networks.</p></details><details><summary>What happens after my five free ads?<ChevronDown size={17} /></summary><p>You can continue with a K20 weekly or K100 monthly subscription. Payment is easily made via Mobile Money (Airtel, MTN, Zamtel) and confirmed quickly over WhatsApp.</p></details><details><summary>What kind of ad can I submit?<ChevronDown size={17} /></summary><p>Share a clear message about your Zambian business, a destination link, and an optional image. Keep it accurate, useful and appropriate for a broad audience.</p></details></div></section>
+
+    <section className="social-strip"><span className="social-label">BROADCAST DIRECTLY TO</span><span><Instagram size={17} /> Instagram</span><span><MessageSquareText size={17} /> Facebook Groups</span><span><Zap size={16} /> TikTok</span><span><MessageSquareText size={17} /> WhatsApp Communities</span><span><Link2 size={17} /> LinkedIn</span></section>
+
+    <section className="steps-section" id="how-it-works"><div className="section-kicker">A BETTER WAY TO BE SEEN</div><div className="section-heading-row"><h2>Three steps.<br /><span>More eyes on you.</span></h2><p>No agency calls. No complicated campaign setup. Just select your target communities and broadcast.</p></div><div className="steps-grid">
+      <article className="step-item"><span className="step-index">01</span><div className="step-icon"><FileImage size={20} /></div><h3>Create your ad</h3><p>Share your message, photo, link and select the Zambian groups you want to reach.</p></article>
+      <article className="step-item step-highlight"><span className="step-index">02</span><div className="step-icon"><Users size={20} /></div><h3>Choose target groups</h3><p>Select from Lusaka, Copperbelt, Farming, Tech, and Buy & Sell communities or add custom links.</p></article>
+      <article className="step-item"><span className="step-index">03</span><div className="step-icon"><Share2 size={20} /></div><h3>Broadcast & track</h3><p>Distribute with 1 click across main channels and groups. Stay in the loop with live event tracking.</p></article>
+    </div></section>
+
+    <section className="steps-section" id="communities" style={{ paddingTop: '20px' }}>
+      <div className="section-kicker">ZAMBIAN AUDIENCE NETWORK</div>
+      <div className="section-heading-row">
+        <h2>Top business communities.<br /><span>Ready for your post.</span></h2>
+        <p>Explore curated active buying & selling groups across Lusaka, the Copperbelt, and nationwide.</p>
+      </div>
+      <div className="community-grid" style={{ maxHeight: 'none' }}>
+        {DEFAULT_COMMUNITIES.slice(0, 8).map((c) => (
+          <div key={c.id} className="community-card">
+            <div className="community-card-top">
+              <span className="comm-platform-tag">{c.platform}</span>
+              {c.isMainChannel && <span className="reach-badge" style={{ padding: '2px 7px' }}>Main Broadcast</span>}
+            </div>
+            <b>{c.name}</b>
+            <p>{c.description}</p>
+            <div className="community-card-foot">
+              <span>{c.members}</span>
+              <a href={c.url} target="_blank" rel="noreferrer" className="text-link" style={{ fontSize: '9px' }}>Preview <ExternalLink size={10} /></a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section className="pricing-section" id="pricing"><div className="pricing-intro"><div className="section-kicker">STRAIGHT-UP PRICING</div><h2>Start free.<br /><span>Keep growing.</span></h2><p>Try AdReach with five free submissions. When you’re ready, choose a simple plan that fits your business.</p><div className="pricing-footnote"><Check size={15} /> No hidden fees. Pay via Mobile Money (Airtel, MTN, Zamtel).</div></div><div className="pricing-cards"><article className="price-card"><div className="price-label">A GOOD PLACE TO START</div><h3>Free</h3><div className="price-amount"><strong>K0</strong><span> / first 5 ads</span></div><p>Get your business in front of more people, one submission at a time.</p><ul><li><Check size={15} /> 5 ad submissions</li><li><Check size={15} /> Social group targeting</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Start with 5 free ads <ArrowRight size={16} /></ButtonLink></article><article className="price-card price-featured"><span className="popular-label">MOST FLEXIBLE</span><div className="price-label">FOR THE WEEKLY PUSH</div><h3>Tier 1 · Weekly</h3><div className="price-amount"><strong>K20</strong><span> / week</span></div><p>Keep sharing your offers and announcements with a little more room.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Full social group broadcast</li><li><Check size={15} /> WhatsApp confirmation</li></ul><ButtonLink href="/sign-up">Choose weekly <ArrowRight size={16} /></ButtonLink></article><article className="price-card"><div className="price-label">FOR A STEADY PRESENCE</div><h3>Tier 2 · Monthly</h3><div className="price-amount"><strong>K100</strong><span> / month</span></div><p>Plan ahead and keep your business visible throughout the month.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Multi-group broadcast</li><li><Check size={15} /> Priority social review</li></ul><ButtonLink href="/sign-up" kind="outline">Choose monthly <ArrowRight size={16} /></ButtonLink></article></div><p className="price-disclaimer">All prices shown in Zambian Kwacha (ZMK). Pay easily via Mobile Money (Airtel, MTN, Zamtel) with instant WhatsApp verification.</p></section>
+
+    <section className="trust-band"><div className="trust-seal"><BadgeCheck size={23} /></div><div><span className="section-kicker">CLEAR FROM THE START</span><h2>Know where your ad stands.</h2></div><p>Submitted, under review, approved or broadcasted. Your dashboard makes every step easy to understand and execute.</p><ButtonLink href="/sign-up" kind="outline">Create your account <ArrowRight size={16} /></ButtonLink></section>
+
+    <section className="faq-section" id="faq"><div className="faq-title"><div className="section-kicker">GOOD QUESTIONS</div><h2>Before you<br /><span>get started.</span></h2><a href="mailto:hello@adreach.co.zm">Still wondering? Talk to us <ArrowUpRight size={14} /></a></div><div className="faq-list"><details><summary>How does social media and group posting work?<ChevronDown size={17} /></summary><p>AdReach allows you to select both our primary broadcast channels (Facebook, WhatsApp, Instagram, TikTok, LinkedIn) and targeted Zambian groups. When you broadcast, AdReach queues the distribution events and provides 1-click posting links to push your ad directly into selected communities.</p></details><details><summary>Can I target specific Facebook and WhatsApp groups?<ChevronDown size={17} /></summary><p>Yes! You can search our curated directory of active groups in Lusaka, the Copperbelt, Farming, Tech, and Real Estate, or type in your own custom group link.</p></details><details><summary>What happens after my five free ads?<ChevronDown size={17} /></summary><p>You can continue with a K20 weekly or K100 monthly subscription. Payment is made simply via Mobile Money (Airtel, MTN, Zamtel) and confirmed over WhatsApp.</p></details><details><summary>Can I install AdReach as an App?<ChevronDown size={17} /></summary><p>Yes! AdReach is a full Progressive Web App. You can tap "Install App" on your phone or computer to install it directly to your home screen.</p></details></div></section>
+
     <section className="closing-cta"><div className="closing-mark"><Megaphone size={24} /></div><div><span>YOUR NEXT CUSTOMER IS OUT THERE</span><h2>Let’s help them find you.</h2></div><ButtonLink href="/sign-up">Submit your first ad <ArrowRight size={17} /></ButtonLink></section>
   </main><footer className="site-footer"><Brand inverse /><span>Made for businesses moving Zambia forward.</span><span>© {new Date().getFullYear()} AdReach</span><a href="mailto:hello@adreach.co.zm">Contact <ArrowUpRight size={14} /></a></footer></div>;
 }
@@ -199,15 +288,263 @@ function PaymentModal({
   );
 }
 
+function SocialPublishModal({
+  ad,
+  onClose,
+}: {
+  ad: Ad;
+  onClose: () => void;
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([
+    'main-adreach-fb',
+    'main-adreach-wa',
+    'main-adreach-ig',
+    'main-adreach-tt',
+    'main-adreach-li',
+    'grp-lusaka-biz',
+    'grp-zm-buysell',
+  ]);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [customUrl, setCustomUrl] = useState('');
+  const [customList, setCustomList] = useState<{ id: string; name: string; url: string; platform: string }[]>([]);
+  const [publishing, setPublishing] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const addCustomGroup = (e: FormEvent) => {
+    e.preventDefault();
+    if (!customUrl.trim()) return;
+    const newGrp = {
+      id: `custom-${Date.now()}`,
+      name: customUrl.trim().replace(/^https?:\/\/(www\.)?/, '').slice(0, 32),
+      url: customUrl.trim(),
+      platform: customUrl.includes('whatsapp') ? 'whatsapp' : customUrl.includes('facebook') ? 'facebook' : 'web',
+    };
+    setCustomList([...customList, newGrp]);
+    setSelectedIds([...selectedIds, newGrp.id]);
+    setCustomUrl('');
+  };
+
+  const allAvailable: Community[] = [...DEFAULT_COMMUNITIES, ...customList.map((c) => ({
+    id: c.id,
+    name: c.name,
+    platform: c.platform as any,
+    category: 'Custom Target',
+    members: 'Custom',
+    url: c.url,
+    description: 'Custom added community',
+    isMainChannel: false,
+  }))];
+
+  const filteredCommunities = allAvailable.filter((c) => {
+    const matchCat = activeCategory === 'All' || c.category === activeCategory;
+    const matchQuery =
+      !search ||
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.description.toLowerCase().includes(search.toLowerCase()) ||
+      c.platform.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchQuery;
+  });
+
+  const publishNow = async () => {
+    setPublishing(true);
+    try {
+      const res = await fetch('/api/social/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adId: ad.id,
+          channelIds: selectedIds.filter((id) => id.startsWith('main-')),
+          communityIds: selectedIds.filter((id) => id.startsWith('grp-')),
+          customGroups: customList.filter((g) => selectedIds.includes(g.id)),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Could not broadcast ad.');
+      setResult(json);
+      queryClient.invalidateQueries({ queryKey: getListWebhookLogsQueryKey() });
+    } catch (err: any) {
+      alert(err.message || 'Error publishing ad');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const copyPost = () => {
+    const text = result?.shareIntents?.formattedText || [
+      `📢 *${ad.title.toUpperCase()}*`,
+      '',
+      ad.description,
+      '',
+      `👉 Details & Contact: ${ad.link}`,
+      '',
+      'Featured on AdReach Zambia #Zambia #Lusaka #AdReach',
+    ].join('\n');
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="dist-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="dist-modal panel" onClick={(e) => e.stopPropagation()}>
+        <div className="payment-modal-header">
+          <div>
+            <div className="section-kicker">MULTI-CHANNEL BROADCAST</div>
+            <h2>Publish to Social Media & Groups</h2>
+          </div>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">
+            <X size={18} />
+          </button>
+        </div>
+
+        {result ? (
+          <div className="social-dist-success">
+            <div className="notice-banner" style={{ marginTop: '12px' }}>
+              <Check size={16} /> {result.message}
+            </div>
+
+            <div className="copy-post-box">
+              <small style={{ fontWeight: 700, color: '#24483e' }}>FORMATTED PROMOTIONAL POST</small>
+              <pre>{result.shareIntents?.formattedText}</pre>
+              <button type="button" onClick={copyPost} className="button button-outline small-button">
+                {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied to Clipboard!' : 'Copy Formatted Text'}
+              </button>
+            </div>
+
+            <div className="section-kicker" style={{ marginTop: '16px' }}>1-CLICK DIRECT SOCIAL SHARING</div>
+            <div className="dist-intents-grid">
+              <a href={result.shareIntents?.whatsapp} target="_blank" rel="noreferrer" className="intent-card-btn intent-wa">
+                <MessageSquareText size={18} /> Post to WhatsApp Groups & Status
+              </a>
+              <a href={result.shareIntents?.facebook} target="_blank" rel="noreferrer" className="intent-card-btn intent-fb">
+                <Globe size={18} /> Post to Facebook Groups
+              </a>
+              <a href={result.shareIntents?.linkedin} target="_blank" rel="noreferrer" className="intent-card-btn intent-li">
+                <Link2 size={18} /> Share on LinkedIn
+              </a>
+              <a href={result.shareIntents?.twitter} target="_blank" rel="noreferrer" className="intent-card-btn intent-x">
+                <Send size={18} /> Post to X / Twitter
+              </a>
+            </div>
+
+            <button type="button" className="button button-primary" style={{ width: '100%', marginTop: '14px' }} onClick={onClose}>
+              Done / Return to Dashboard
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="payment-modal-summary" style={{ margin: '14px 0' }}>
+              <div>
+                <small>TARGET AUDIENCE</small>
+                <div className="pay-amount" style={{ fontSize: '18px' }}>
+                  {selectedIds.length} Destinations Selected
+                </div>
+              </div>
+              <div className="reach-badge">
+                <span /> Est. Reach: ~{Math.min(980, selectedIds.length * 68)},000+ people
+              </div>
+            </div>
+
+            <div className="community-search-bar">
+              <Search size={14} style={{ color: '#88988e' }} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search groups & communities (e.g. Lusaka, Copperbelt, Farming, Buy & Sell)..."
+              />
+              {search && <button type="button" onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}><X size={13} /></button>}
+            </div>
+
+            <div className="community-filters">
+              {['All', 'General Business', 'Buy & Sell', 'Agriculture', 'Real Estate & Motors', 'Tech & Services'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setActiveCategory(cat)}
+                  className={`filter-chip ${activeCategory === cat ? 'active' : ''}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="community-grid">
+              {filteredCommunities.map((c) => {
+                const isSelected = selectedIds.includes(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => toggleSelect(c.id)}
+                    className={`community-card ${isSelected ? 'selected' : ''}`}
+                  >
+                    <div className="community-card-top">
+                      <span className="comm-platform-tag">{c.platform}</span>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        aria-label={`Select ${c.name}`}
+                      />
+                    </div>
+                    <b>{c.name}</b>
+                    <p>{c.description}</p>
+                    <div className="community-card-foot">
+                      <span>{c.members}</span>
+                      {c.isMainChannel && <span style={{ color: '#23614d', fontWeight: 700 }}>Main Broadcast</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <form onSubmit={addCustomGroup} className="custom-group-row">
+              <input
+                type="url"
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                placeholder="Add custom group link (e.g. https://facebook.com/groups/... or WhatsApp group invite)"
+              />
+              <button type="submit" className="button button-outline small-button">
+                <Plus size={14} /> Add
+              </button>
+            </form>
+
+            <div className="payment-modal-actions">
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={publishNow}
+                disabled={publishing || selectedIds.length === 0}
+              >
+                {publishing ? <><LoaderCircle className="spin" size={16} /> Broadcasting Ad…</> : <><Megaphone size={16} /> Broadcast to {selectedIds.length} Communities Now</>}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AppShell({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const account = useGetAccount();
   const [location] = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
+  const { isInstallable, installApp } = usePwaInstall();
   const name = user?.fullName || user?.firstName || 'Your account';
   const avatar = name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
-  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav><div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission.</p><a href="mailto:hello@adreach.co.zm">Contact support <ArrowUpRight size={13} /></a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right"><span className="review-note"><span /> Human review, always</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
+  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:hello@adreach.co.zm">Contact support <ArrowUpRight size={13} /></a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
 }
 function Protected({ children }: { children: ReactNode }) {
   return <><Show when="signed-in">{children}</Show><Show when="signed-out"><Redirect to="/" /></Show></>;
@@ -221,6 +558,7 @@ function AccountDashboardPage() {
   const plansQuery = useListPlans();
   const [notice, setNotice] = useState('');
   const [paymentModal, setPaymentModal] = useState<ManualPaymentRequest | null>(null);
+  const [socialModalAd, setSocialModalAd] = useState<Ad | null>(null);
   const data = account.data;
 
   const onCheckout = (planId: 'weekly' | 'monthly') => {
@@ -273,7 +611,7 @@ function AccountDashboardPage() {
       <div>
         <div className="section-kicker">YOUR ADREACH</div>
         <h1>Good to see you, {data.user.name.split(' ')[0]}.</h1>
-        <p>Here’s what’s happening with your business today.</p>
+        <p>Broadcast your business across verified social channels and community groups.</p>
       </div>
       <ButtonLink href="/submit"><Plus size={17} /> Submit an ad</ButtonLink>
     </div>
@@ -361,7 +699,7 @@ function AccountDashboardPage() {
       <div className="section-title-row">
         <div>
           <div className="section-kicker">YOUR SUBMISSIONS</div>
-          <h2>Ads and their progress</h2>
+          <h2>Ads and social distribution</h2>
         </div>
         <span className="result-count">{data.ads.length} {data.ads.length === 1 ? 'ad' : 'ads'}</span>
       </div>
@@ -369,33 +707,74 @@ function AccountDashboardPage() {
         <div className="empty-state">
           <div className="empty-art"><Megaphone size={25} /></div>
           <h3>Your first ad starts here.</h3>
-          <p>Give your business a clear, simple introduction. We’ll take it from there.</p>
+          <p>Give your business a clear introduction and select your target communities.</p>
           <ButtonLink href="/submit"><Plus size={16} /> Submit your first ad</ButtonLink>
         </div>
       ) : (
         <div className="ad-table-wrap">
           <table className="ad-table">
-            <thead><tr><th>AD</th><th>SUBMITTED</th><th>STATUS</th><th>PLAN</th><th></th></tr></thead>
-            <tbody>{data.ads.map((ad) => <AdRow key={ad.id} ad={ad} />)}</tbody>
+            <thead><tr><th>AD</th><th>SUBMITTED</th><th>STATUS</th><th>SOCIAL POSTING</th><th></th></tr></thead>
+            <tbody>
+              {data.ads.map((ad) => (
+                <tr key={ad.id} data-testid={`row-ad-${ad.id}`}>
+                  <td>
+                    <div className="table-ad-title">
+                      {ad.imagePath ? <img src={`/api/storage${ad.imagePath}`} alt="" /> : <div className="table-thumb"><FileImage size={16} /></div>}
+                      <span><b>{ad.title}</b><small>{ad.description.slice(0, 50)}{ad.description.length > 50 ? '…' : ''}</small></span>
+                    </div>
+                  </td>
+                  <td>{dateLabel(ad.createdAt)}</td>
+                  <td>
+                    <StatusPill status={ad.status} />
+                    {ad.adminNote && <small className="note-inline">{ad.adminNote}</small>}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="post-social-btn"
+                      onClick={() => setSocialModalAd(ad)}
+                      title="Post ad to social media & community groups"
+                    >
+                      <Share2 size={13} /> Post to Groups
+                    </button>
+                  </td>
+                  <td>
+                    <a href={ad.link} target="_blank" rel="noreferrer" className="external-link" aria-label={`Open ${ad.title} link`}><ExternalLink size={15} /></a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
-          <div className="mobile-ad-list">{data.ads.map((ad) => <AdMobile key={ad.id} ad={ad} />)}</div>
+          <div className="mobile-ad-list">
+            {data.ads.map((ad) => (
+              <article className="mobile-ad-card" key={ad.id}>
+                <div className="mobile-ad-main">
+                  <b>{ad.title}</b>
+                  <StatusPill status={ad.status} />
+                </div>
+                <p>{dateLabel(ad.createdAt)} · {ad.planId} plan</p>
+                {ad.adminNote && <small>{ad.adminNote}</small>}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="post-social-btn"
+                    onClick={() => setSocialModalAd(ad)}
+                  >
+                    <Share2 size={13} /> Post to Groups
+                  </button>
+                  <a href={ad.link} target="_blank" rel="noreferrer">Open link <ExternalLink size={13} /></a>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       )}
     </section>
 
-    <section className="dashboard-footnote">
-      <span><ShieldCheck size={15} /></span>
-      <p><b>What does “Approved” mean?</b> Your ad has passed our review and is ready for distribution. Social posting is not automatic.</p>
-    </section>
-
     {paymentModal && <PaymentModal payment={paymentModal} onClose={() => setPaymentModal(null)} />}
+    {socialModalAd && <SocialPublishModal ad={socialModalAd} onClose={() => setSocialModalAd(null)} />}
   </AppShell>;
 }
-
-function AdRow({ ad }: { ad: Ad }) {
-  return <tr data-testid={`row-ad-${ad.id}`}><td><div className="table-ad-title">{ad.imagePath ? <img src={`/api/storage${ad.imagePath}`} alt="" /> : <div className="table-thumb"><FileImage size={16} /></div>}<span><b>{ad.title}</b><small>{ad.description.slice(0, 50)}{ad.description.length > 50 ? '…' : ''}</small></span></div></td><td>{dateLabel(ad.createdAt)}</td><td><StatusPill status={ad.status} />{ad.adminNote && <small className="note-inline">{ad.adminNote}</small>}</td><td><span className="plan-tag">{ad.planId}</span></td><td><a href={ad.link} target="_blank" rel="noreferrer" className="external-link" aria-label={`Open ${ad.title} link`}><ExternalLink size={15} /></a></td></tr>;
-}
-function AdMobile({ ad }: { ad: Ad }) { return <article className="mobile-ad-card"><div className="mobile-ad-main"><b>{ad.title}</b><StatusPill status={ad.status} /></div><p>{dateLabel(ad.createdAt)} · {ad.planId} plan</p>{ad.adminNote && <small>{ad.adminNote}</small>}<a href={ad.link} target="_blank" rel="noreferrer">Open destination <ExternalLink size={13} /></a></article>; }
 
 function SubmissionPage() {
   const account = useGetAccount();
@@ -403,7 +782,6 @@ function SubmissionPage() {
   const requestUpload = useRequestUploadUrl();
   const requestPayment = useRequestManualPayment();
   const queryClient = useQueryClient();
-  const { user } = useUser();
   const [title, setTitle] = useState('');
   const [adUserName, setAdUserName] = useState('');
   const [description, setDescription] = useState('');
@@ -414,11 +792,28 @@ function SubmissionPage() {
   const [success, setSuccess] = useState('');
   const [uploading, setUploading] = useState(false);
   const [paymentModal, setPaymentModal] = useState<ManualPaymentRequest | null>(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([
+    'main-adreach-fb',
+    'main-adreach-wa',
+    'main-adreach-ig',
+    'grp-lusaka-biz',
+    'grp-zm-buysell',
+  ]);
+  const [groupSearch, setGroupSearch] = useState('');
+  const [groupCategory, setGroupCategory] = useState('All');
+  const [customGroupUrl, setCustomGroupUrl] = useState('');
+
   const data = account.data;
   const plansQuery = useListPlans();
   const plans = plansQuery.data || data?.plans || [];
   const canSubmit = data?.canSubmit !== false;
   const formBusy = createAd.isPending || uploading || requestUpload.isPending;
+
+  const toggleGroup = (id: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -434,10 +829,20 @@ function SubmissionPage() {
         imagePath = upload.objectPath;
         setUploading(false);
       }
-      await createAd.mutateAsync({ data: { userName: adUserName.trim() || data.user.name, title: title.trim(), description: description.trim(), link: link.trim(), imagePath } });
+      await createAd.mutateAsync({
+        data: {
+          userName: adUserName.trim() || data.user.name,
+          title: title.trim(),
+          description: description.trim(),
+          link: link.trim(),
+          imagePath,
+          shareToAdReachChannels: true,
+          socialAccountIds: selectedGroupIds,
+        },
+      });
       queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
       setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview('');
-      setSuccess('Your ad is in. We’ll review it and update your dashboard.');
+      setSuccess('Your ad is in and queued for social community broadcast! Check your dashboard.');
     } catch (err: any) { setUploading(false); setError(err?.message || 'We couldn’t submit your ad. Please try again.'); }
   };
 
@@ -464,12 +869,21 @@ function SubmissionPage() {
     });
   };
 
+  const filteredGroups = DEFAULT_COMMUNITIES.filter((c) => {
+    const matchCat = groupCategory === 'All' || c.category === groupCategory;
+    const matchQuery =
+      !groupSearch ||
+      c.name.toLowerCase().includes(groupSearch.toLowerCase()) ||
+      c.description.toLowerCase().includes(groupSearch.toLowerCase());
+    return matchCat && matchQuery;
+  });
+
   return <AppShell>
     <div className="page-heading submit-heading">
       <div>
-        <div className="section-kicker">ONE FORM, ONE CLEAR NEXT STEP</div>
-        <h1>Submit an ad</h1>
-        <p>Tell people what makes your business worth finding.</p>
+        <div className="section-kicker">ONE FORM · TARGET ANY COMMUNITY</div>
+        <h1>Submit an ad & choose social groups</h1>
+        <p>Tell people what makes your business worth finding and pick your target communities.</p>
       </div>
       <div className="step-marker"><span>01</span><i /> <span>02</span><i /> <span>03</span></div>
     </div>
@@ -483,7 +897,7 @@ function SubmissionPage() {
         <div>
           <div className="section-kicker">FREE SUBMISSIONS USED</div>
           <h2>You’ve used your five free ads.</h2>
-          <p>Choose a plan to keep submitting and tracking your ads via manual Mobile Money / Bank transfer.</p>
+          <p>Choose a plan to keep submitting and broadcasting across social groups via Mobile Money / Bank transfer.</p>
           <div className="limit-plans">
             {plans.map((plan) => (
               <button key={plan.id} onClick={() => startPlan(plan.id)} disabled={requestPayment.isPending} data-testid={`button-subscribe-${plan.id}`}>
@@ -528,9 +942,73 @@ function SubmissionPage() {
           </label>
           {file && <button type="button" className="remove-file" onClick={() => { setFile(null); setPreview(''); }}>Remove image <X size={13} /></button>}
 
-          <div className="form-disclosure"><ShieldCheck size={17} /><span>Every ad is reviewed by our team before it can be approved. Approval prepares it for distribution; social posting is not automatic.</span></div>
+          <div className="social-dist-panel">
+            <div className="social-dist-header">
+              <div>
+                <span className="section-kicker">TARGET AUDIENCE</span>
+                <h3>Select Social Media Channels & Groups</h3>
+              </div>
+              <div className="reach-badge">
+                <span /> Est. Reach: ~{Math.min(950, selectedGroupIds.length * 65)},000+
+              </div>
+            </div>
+
+            <div className="community-search-bar">
+              <Search size={14} style={{ color: '#88988e' }} />
+              <input
+                type="text"
+                value={groupSearch}
+                onChange={(e) => setGroupSearch(e.target.value)}
+                placeholder="Search groups (e.g. Lusaka, Copperbelt, Farming, Tech)..."
+              />
+            </div>
+
+            <div className="community-filters">
+              {['All', 'General Business', 'Buy & Sell', 'Agriculture', 'Real Estate & Motors', 'Tech & Services'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setGroupCategory(cat)}
+                  className={`filter-chip ${groupCategory === cat ? 'active' : ''}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="community-grid">
+              {filteredGroups.map((c) => {
+                const isSelected = selectedGroupIds.includes(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => toggleGroup(c.id)}
+                    className={`community-card ${isSelected ? 'selected' : ''}`}
+                  >
+                    <div className="community-card-top">
+                      <span className="comm-platform-tag">{c.platform}</span>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        aria-label={`Select ${c.name}`}
+                      />
+                    </div>
+                    <b>{c.name}</b>
+                    <p>{c.description}</p>
+                    <div className="community-card-foot">
+                      <span>{c.members}</span>
+                      {c.isMainChannel && <span style={{ color: '#23614d', fontWeight: 700 }}>Main</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="form-disclosure"><ShieldCheck size={17} /><span>Your ad will be reviewed and broadcast to all chosen social channels and targeted groups.</span></div>
           <button className="button button-primary submit-button" type="submit" disabled={formBusy || !data.canSubmit} data-testid="button-submit-ad">
-            {formBusy ? <><LoaderCircle className="spin" size={16} /> {uploading ? 'Uploading image…' : 'Submitting…'}</> : <>Send for review <ArrowRight size={16} /></>}
+            {formBusy ? <><LoaderCircle className="spin" size={16} /> {uploading ? 'Uploading image…' : 'Submitting…'}</> : <>Send for review & broadcast <ArrowRight size={16} /></>}
           </button>
         </form>
 
@@ -542,7 +1020,7 @@ function SubmissionPage() {
             <p>You have <b>{Math.max(0, data.freeAdsLimit - data.freeAdsUsed)} free {data.freeAdsLimit - data.freeAdsUsed === 1 ? 'submission' : 'submissions'}</b> remaining.</p>
             <Link href="/dashboard">See all your ads <ArrowRight size={14} /></Link>
           </div>
-          <div className="submission-tip"><span className="tip-icon"><Sparkles size={16} /></span><div><b>A useful tip</b><p>A clear offer and a working link help people take the next step.</p></div></div>
+          <div className="submission-tip"><span className="tip-icon"><Sparkles size={16} /></span><div><b>Social targeting tip</b><p>Selecting 3 to 5 targeted local groups delivers 4x higher customer response than generic posts.</p></div></div>
           <div className="plan-note">
             <span className="section-kicker">AFTER YOUR FREE ADS</span>
             <h3>Keep going for K20/week or K100/month.</h3>
@@ -584,7 +1062,7 @@ function AdminPage() {
     if (decision === 'reject' && !notes[ad.id]?.trim() && !window.confirm('Reject this ad without a note for the business?')) return;
     review.mutate({ id: ad.id, data: { decision, note: notes[ad.id]?.trim() || undefined } }, {
       onSuccess: () => {
-        setFeedback(decision === 'approve' ? 'Ad approved and marked ready for distribution.' : 'Ad returned to the business with your review.');
+        setFeedback(decision === 'approve' ? 'Ad approved and marked ready for multi-channel distribution.' : 'Ad returned to the business with your review.');
         queryClient.invalidateQueries({ queryKey: getGetAdminOverviewQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListAdminAdsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListWebhookLogsQueryKey() });
@@ -615,7 +1093,7 @@ function AdminPage() {
       <div>
         <div className="section-kicker">ADREACH OPERATIONS</div>
         <h1>Review workspace</h1>
-        <p>Keep every decision clear, consistent and ready for the next step.</p>
+        <p>Keep every decision clear, consistent and ready for social distribution.</p>
       </div>
       <span className="admin-access-label"><ShieldCheck size={15} /> Server-authorized workspace</span>
     </div>
@@ -773,14 +1251,14 @@ function AdminPage() {
         </div>
         <button className="icon-button" onClick={() => logs.refetch()} aria-label="Refresh event log" data-testid="button-refresh-events"><RefreshCw size={15} /></button>
       </div>
-      <p className="event-disclaimer">These are application events, not proof of social network publishing.</p>
-      {logs.isLoading ? <LoadingState label="Loading event log" /> : logs.isError ? <ErrorState message="Could not load distribution events." retry={() => logs.refetch()} /> : !(logs.data?.length) ? <div className="empty-log">No events yet. New submissions and approvals will appear here.</div> : <div className="event-list">{logs.data.slice(0, 8).map((event) => <EventRow key={event.id} event={event} />)}</div>}
+      <p className="event-disclaimer">These are application events, tracking live multi-channel broadcast across social networks.</p>
+      {logs.isLoading ? <LoadingState label="Loading event log" /> : logs.isError ? <ErrorState message="Could not load distribution events." retry={() => logs.refetch()} /> : !(logs.data?.length) ? <div className="empty-log">No events yet. New submissions and broadcasts will appear here.</div> : <div className="event-list">{logs.data.slice(0, 8).map((event) => <EventRow key={event.id} event={event} />)}</div>}
     </section>
   </AppShell>;
 }
 
 function EventRow({ event }: { event: DistributionEvent }) {
-  return <div className="event-row" data-testid={`event-${event.id}`}><span className={`event-type-icon ${event.eventType === 'ad.approved' ? 'event-approved' : ''}`}>{event.eventType === 'ad.approved' ? <Check size={15} /> : <Send size={14} />}</span><div className="event-description"><b>{event.eventType === 'ad.approved' ? 'Ad approved' : 'Ad submitted'}</b><small>Ad ref. {event.adId}</small></div><span className={`event-state event-${event.status}`}>{event.status}</span><time>{dateLabel(event.createdAt)}</time></div>;
+  return <div className="event-row" data-testid={`event-${event.id}`}><span className={`event-type-icon ${event.eventType === 'ad.approved' ? 'event-approved' : ''}`}>{event.eventType === 'ad.approved' ? <Check size={15} /> : <Send size={14} />}</span><div className="event-description"><b>{event.eventType === 'ad.approved' ? 'Ad approved / broadcasted' : 'Ad submitted'}</b><small>Ad ref. {event.adId}</small></div><span className={`event-state event-${event.status}`}>{event.status}</span><time>{dateLabel(event.createdAt)}</time></div>;
 }
 
 function SignInPage() { return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Good work deserves<br />to be seen.</p><span>ADVERTISING MADE EASIER, RIGHT HERE.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>; }
