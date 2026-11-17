@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: 'pages'
@@ -45,20 +43,6 @@ jobs:
       - name: Create 404.html for SPA Client-Side Routing
         run: cp artifacts/ad-reach/dist/public/index.html artifacts/ad-reach/dist/public/404.html
 
-      # 1. Direct GitHub Pages Actions Deployment
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'artifacts/ad-reach/dist/public'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      # 2. Branch-based GitHub Pages Deployment (gh-pages branch)
       - name: Deploy to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:

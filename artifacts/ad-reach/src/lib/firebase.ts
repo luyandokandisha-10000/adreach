@@ -13,22 +13,19 @@ import {
 import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL, type FirebaseStorage } from 'firebase/storage';
 
-// Firebase configuration parameters sourced from Vite environment variables.
-// Project ID provided: adreachzm
+// Firebase configuration parameters sourced from environment variables or active project defaults
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyB_yaNA3Rz9VzQwjgfZJq3o0AR66HivYB0',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'adreachzm.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'adreachzm',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'adreachzm.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '179718819418',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:179718819418:web:7b92f40a0be6a615e81263',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-BFYM33R49H',
 };
 
 export function isFirebaseConfigured(): boolean {
-  return Boolean(
-    import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID
-  );
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 }
 
 // Singleton Firebase instances
