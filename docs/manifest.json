@@ -1,0 +1,25 @@
+{
+  "name": "AdReach Zambia",
+  "short_name": "AdReach",
+  "description": "Zambia's premier social advertising platform. Reach verified audiences across Facebook, WhatsApp, Instagram, TikTok and targeted business communities.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbfaf5",
+  "theme_color": "#236b58",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "marketing", "productivity"]
+}
