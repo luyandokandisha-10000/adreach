@@ -12,5 +12,6 @@ export interface AdminOverview {
   activeAds: number;
   rejectedAds: number;
   queuedEvents: number;
+  pendingPayments: number;
   latestEvents: DistributionEvent[];
 }

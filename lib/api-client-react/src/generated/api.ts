@@ -31,12 +31,21 @@ import type {
   AdReviewInput,
   AdminAd,
   AdminOverview,
+  AdminPaymentRequest,
   DistributionEvent,
   ErrorEnvelope,
   HealthStatus,
   ListAdminAdsParams,
+  ManualPaymentRequest,
+  MessageResponse,
+  PaymentReviewInput,
   Plan,
   PlanPurchaseInput,
+  SocialAccount,
+  SocialAccountList,
+  SocialBrandUpdateInput,
+  SocialChannel,
+  SocialProvider,
   Subscription,
   UploadUrlRequest,
   UploadUrlResponse
@@ -461,18 +470,18 @@ export const useCreateAd = <TError = ErrorType<ErrorEnvelope>,
       return useMutation(getCreateAdMutationOptions(options), queryClient);
     }
 
-export const getStartMockCheckoutUrl = () => {
+export const getRequestManualPaymentUrl = () => {
 
 
 
 
-  return `/api/subscriptions/mock-checkout`
+  return `/api/subscriptions/manual-payment`
 }
 
 /**
- * @summary Activate a mock subscription for development
+ * @summary Request payment verification through WhatsApp
  */
-export const startMockCheckout = async (planPurchaseInput: PlanPurchaseInput, options?: Parameters<typeof customFetch>[1]): Promise<Subscription> => {
+export const requestManualPayment = async (planPurchaseInput: PlanPurchaseInput, options?: Parameters<typeof customFetch>[1]): Promise<ManualPaymentRequest> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -488,7 +497,7 @@ export const startMockCheckout = async (planPurchaseInput: PlanPurchaseInput, op
     }
     return headers;
   };
-return customFetch<Subscription>(getStartMockCheckoutUrl(),
+return customFetch<ManualPaymentRequest>(getRequestManualPaymentUrl(),
   {
     ...options,
     method: 'POST',
@@ -501,13 +510,13 @@ return customFetch<Subscription>(getStartMockCheckoutUrl(),
 
 
 
-export const getStartMockCheckoutMutationKey = () => ['startMockCheckout'] as const;
+export const getRequestManualPaymentMutationKey = () => ['requestManualPayment'] as const;
 
-export const getStartMockCheckoutMutationOptions = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMockCheckout>>, TError,StartMockCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startMockCheckout>>, TError,StartMockCheckoutMutationVariables, TContext> => {
+export const getRequestManualPaymentMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestManualPayment>>, TError,RequestManualPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestManualPayment>>, TError,RequestManualPaymentMutationVariables, TContext> => {
 
-const mutationKey = getStartMockCheckoutMutationKey();
+const mutationKey = getRequestManualPaymentMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -517,10 +526,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startMockCheckout>>, StartMockCheckoutMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestManualPayment>>, RequestManualPaymentMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  startMockCheckout(data,requestOptions)
+          return  requestManualPayment(data,requestOptions)
         }
 
 
@@ -530,23 +539,23 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type StartMockCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof startMockCheckout>>>
-    export type StartMockCheckoutMutationBody = BodyType<PlanPurchaseInput>
-    export type StartMockCheckoutMutationError = ErrorType<ErrorEnvelope>
-    export type StartMockCheckoutMutationVariables = {data: BodyType<PlanPurchaseInput>}
+    export type RequestManualPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof requestManualPayment>>>
+    export type RequestManualPaymentMutationBody = BodyType<PlanPurchaseInput>
+    export type RequestManualPaymentMutationError = ErrorType<ErrorEnvelope>
+    export type RequestManualPaymentMutationVariables = {data: BodyType<PlanPurchaseInput>}
 
     /**
- * @summary Activate a mock subscription for development
+ * @summary Request payment verification through WhatsApp
  */
-export const useStartMockCheckout = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMockCheckout>>, TError,StartMockCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useRequestManualPayment = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestManualPayment>>, TError,RequestManualPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof startMockCheckout>>,
+        Awaited<ReturnType<typeof requestManualPayment>>,
         TError,
-        StartMockCheckoutMutationVariables,
+        RequestManualPaymentMutationVariables,
         TContext
       > => {
-      return useMutation(getStartMockCheckoutMutationOptions(options), queryClient);
+      return useMutation(getRequestManualPaymentMutationOptions(options), queryClient);
     }
 
 export const getCancelSubscriptionUrl = () => {
@@ -1010,6 +1019,763 @@ export function useListWebhookLogs<TData = Awaited<ReturnType<typeof listWebhook
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListWebhookLogsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPendingPaymentsUrl = () => {
+
+
+
+
+  return `/api/admin/subscriptions/pending-payments`
+}
+
+/**
+ * @summary List subscription payments awaiting confirmation
+ */
+export const listPendingPayments = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminPaymentRequest[]> => {
+
+  return customFetch<AdminPaymentRequest[]>(getListPendingPaymentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPendingPaymentsQueryKey = () => {
+    return [
+    `/api/admin/subscriptions/pending-payments`
+    ] as const;
+    }
+
+
+export const getListPendingPaymentsQueryOptions = <TData = Awaited<ReturnType<typeof listPendingPayments>>, TError = ErrorType<ErrorEnvelope>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPendingPaymentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingPayments>>> = ({ signal }) => listPendingPayments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPendingPaymentsQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingPayments>>>
+export type ListPendingPaymentsQueryError = ErrorType<ErrorEnvelope>
+
+
+export function useListPendingPayments<TData = Awaited<ReturnType<typeof listPendingPayments>>, TError = ErrorType<ErrorEnvelope>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPendingPayments>>,
+          TError,
+          Awaited<ReturnType<typeof listPendingPayments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPendingPayments<TData = Awaited<ReturnType<typeof listPendingPayments>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPendingPayments>>,
+          TError,
+          Awaited<ReturnType<typeof listPendingPayments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPendingPayments<TData = Awaited<ReturnType<typeof listPendingPayments>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List subscription payments awaiting confirmation
+ */
+
+export function useListPendingPayments<TData = Awaited<ReturnType<typeof listPendingPayments>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPendingPayments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPendingPaymentsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/subscriptions/${id}/payment-review`
+}
+
+/**
+ * @summary Confirm or reject a WhatsApp payment request
+ */
+export const reviewPayment = async (id: string,
+    paymentReviewInput: PaymentReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Subscription> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Subscription>(getReviewPaymentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paymentReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewPaymentMutationKey = () => ['reviewPayment'] as const;
+
+export const getReviewPaymentMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPayment>>, TError,ReviewPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewPayment>>, TError,ReviewPaymentMutationVariables, TContext> => {
+
+const mutationKey = getReviewPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPayment>>, ReviewPaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPayment>>>
+    export type ReviewPaymentMutationBody = BodyType<PaymentReviewInput>
+    export type ReviewPaymentMutationError = ErrorType<ErrorEnvelope>
+    export type ReviewPaymentMutationVariables = {id: string;data: BodyType<PaymentReviewInput>}
+
+    /**
+ * @summary Confirm or reject a WhatsApp payment request
+ */
+export const useReviewPayment = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPayment>>, TError,ReviewPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewPayment>>,
+        TError,
+        ReviewPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewPaymentMutationOptions(options), queryClient);
+    }
+
+export const getListSocialChannelsUrl = () => {
+
+
+
+
+  return `/api/social/channels`
+}
+
+/**
+ * @summary List AdReach social destinations and publishing limits
+ */
+export const listSocialChannels = async ( options?: Parameters<typeof customFetch>[1]): Promise<SocialChannel[]> => {
+
+  return customFetch<SocialChannel[]>(getListSocialChannelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSocialChannelsQueryKey = () => {
+    return [
+    `/api/social/channels`
+    ] as const;
+    }
+
+
+export const getListSocialChannelsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialChannels>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSocialChannelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialChannels>>> = ({ signal }) => listSocialChannels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSocialChannelsQueryResult = NonNullable<Awaited<ReturnType<typeof listSocialChannels>>>
+export type ListSocialChannelsQueryError = ErrorType<unknown>
+
+
+export function useListSocialChannels<TData = Awaited<ReturnType<typeof listSocialChannels>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSocialChannels>>,
+          TError,
+          Awaited<ReturnType<typeof listSocialChannels>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSocialChannels<TData = Awaited<ReturnType<typeof listSocialChannels>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSocialChannels>>,
+          TError,
+          Awaited<ReturnType<typeof listSocialChannels>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSocialChannels<TData = Awaited<ReturnType<typeof listSocialChannels>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List AdReach social destinations and publishing limits
+ */
+
+export function useListSocialChannels<TData = Awaited<ReturnType<typeof listSocialChannels>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialChannels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSocialChannelsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSocialAccountsUrl = () => {
+
+
+
+
+  return `/api/social/accounts`
+}
+
+/**
+ * @summary List social profiles connected by the signed-in user
+ */
+export const listSocialAccounts = async ( options?: Parameters<typeof customFetch>[1]): Promise<SocialAccountList> => {
+
+  return customFetch<SocialAccountList>(getListSocialAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSocialAccountsQueryKey = () => {
+    return [
+    `/api/social/accounts`
+    ] as const;
+    }
+
+
+export const getListSocialAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialAccounts>>, TError = ErrorType<ErrorEnvelope>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSocialAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialAccounts>>> = ({ signal }) => listSocialAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSocialAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listSocialAccounts>>>
+export type ListSocialAccountsQueryError = ErrorType<ErrorEnvelope>
+
+
+export function useListSocialAccounts<TData = Awaited<ReturnType<typeof listSocialAccounts>>, TError = ErrorType<ErrorEnvelope>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSocialAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listSocialAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSocialAccounts<TData = Awaited<ReturnType<typeof listSocialAccounts>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSocialAccounts>>,
+          TError,
+          Awaited<ReturnType<typeof listSocialAccounts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSocialAccounts<TData = Awaited<ReturnType<typeof listSocialAccounts>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List social profiles connected by the signed-in user
+ */
+
+export function useListSocialAccounts<TData = Awaited<ReturnType<typeof listSocialAccounts>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSocialAccounts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSocialAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDisconnectSocialAccountUrl = (id: string,) => {
+
+
+
+
+  return `/api/social/accounts/${id}`
+}
+
+/**
+ * @summary Disconnect one of the signed-in user's social accounts
+ */
+export const disconnectSocialAccount = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getDisconnectSocialAccountUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectSocialAccountMutationKey = () => ['disconnectSocialAccount'] as const;
+
+export const getDisconnectSocialAccountMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectSocialAccount>>, TError,DisconnectSocialAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectSocialAccount>>, TError,DisconnectSocialAccountMutationVariables, TContext> => {
+
+const mutationKey = getDisconnectSocialAccountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectSocialAccount>>, DisconnectSocialAccountMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  disconnectSocialAccount(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectSocialAccountMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectSocialAccount>>>
+
+    export type DisconnectSocialAccountMutationError = ErrorType<ErrorEnvelope>
+    export type DisconnectSocialAccountMutationVariables = {id: string}
+
+    /**
+ * @summary Disconnect one of the signed-in user's social accounts
+ */
+export const useDisconnectSocialAccount = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectSocialAccount>>, TError,DisconnectSocialAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectSocialAccount>>,
+        TError,
+        DisconnectSocialAccountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDisconnectSocialAccountMutationOptions(options), queryClient);
+    }
+
+export const getSetBrandSocialAccountUrl = (id: string,) => {
+
+
+
+
+  return `/api/social/accounts/${id}/brand`
+}
+
+/**
+ * @summary Mark an admin-connected account as an AdReach channel
+ */
+export const setBrandSocialAccount = async (id: string,
+    socialBrandUpdateInput: SocialBrandUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<SocialAccount> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SocialAccount>(getSetBrandSocialAccountUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(socialBrandUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getSetBrandSocialAccountMutationKey = () => ['setBrandSocialAccount'] as const;
+
+export const getSetBrandSocialAccountMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setBrandSocialAccount>>, TError,SetBrandSocialAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setBrandSocialAccount>>, TError,SetBrandSocialAccountMutationVariables, TContext> => {
+
+const mutationKey = getSetBrandSocialAccountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setBrandSocialAccount>>, SetBrandSocialAccountMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setBrandSocialAccount(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetBrandSocialAccountMutationResult = NonNullable<Awaited<ReturnType<typeof setBrandSocialAccount>>>
+    export type SetBrandSocialAccountMutationBody = BodyType<SocialBrandUpdateInput>
+    export type SetBrandSocialAccountMutationError = ErrorType<ErrorEnvelope>
+    export type SetBrandSocialAccountMutationVariables = {id: string;data: BodyType<SocialBrandUpdateInput>}
+
+    /**
+ * @summary Mark an admin-connected account as an AdReach channel
+ */
+export const useSetBrandSocialAccount = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setBrandSocialAccount>>, TError,SetBrandSocialAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setBrandSocialAccount>>,
+        TError,
+        SetBrandSocialAccountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetBrandSocialAccountMutationOptions(options), queryClient);
+    }
+
+export const getStartSocialOAuthUrl = (provider: SocialProvider,) => {
+
+
+
+
+  return `/api/social/oauth/${provider}/start`
+}
+
+/**
+ * @summary Start OAuth to connect a social profile
+ */
+export const startSocialOAuth = async (provider: SocialProvider, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getStartSocialOAuthUrl(provider),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartSocialOAuthQueryKey = (provider: SocialProvider,) => {
+    return [
+    `/api/social/oauth/${provider}/start`
+    ] as const;
+    }
+
+
+export const getStartSocialOAuthQueryOptions = <TData = Awaited<ReturnType<typeof startSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStartSocialOAuthQueryKey(provider);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof startSocialOAuth>>> = ({ signal }) => startSocialOAuth(provider, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type StartSocialOAuthQueryResult = NonNullable<Awaited<ReturnType<typeof startSocialOAuth>>>
+export type StartSocialOAuthQueryError = ErrorType<void | ErrorEnvelope>
+
+
+export function useStartSocialOAuth<TData = Awaited<ReturnType<typeof startSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof startSocialOAuth>>,
+          TError,
+          Awaited<ReturnType<typeof startSocialOAuth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStartSocialOAuth<TData = Awaited<ReturnType<typeof startSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof startSocialOAuth>>,
+          TError,
+          Awaited<ReturnType<typeof startSocialOAuth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useStartSocialOAuth<TData = Awaited<ReturnType<typeof startSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Start OAuth to connect a social profile
+ */
+
+export function useStartSocialOAuth<TData = Awaited<ReturnType<typeof startSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof startSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getStartSocialOAuthQueryOptions(provider,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getFinishSocialOAuthUrl = (provider: SocialProvider,) => {
+
+
+
+
+  return `/api/social/oauth/${provider}/callback`
+}
+
+/**
+ * @summary Finish OAuth after provider consent
+ */
+export const finishSocialOAuth = async (provider: SocialProvider, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getFinishSocialOAuthUrl(provider),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFinishSocialOAuthQueryKey = (provider: SocialProvider,) => {
+    return [
+    `/api/social/oauth/${provider}/callback`
+    ] as const;
+    }
+
+
+export const getFinishSocialOAuthQueryOptions = <TData = Awaited<ReturnType<typeof finishSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFinishSocialOAuthQueryKey(provider);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof finishSocialOAuth>>> = ({ signal }) => finishSocialOAuth(provider, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: provider !== null && provider !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FinishSocialOAuthQueryResult = NonNullable<Awaited<ReturnType<typeof finishSocialOAuth>>>
+export type FinishSocialOAuthQueryError = ErrorType<void | ErrorEnvelope>
+
+
+export function useFinishSocialOAuth<TData = Awaited<ReturnType<typeof finishSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof finishSocialOAuth>>,
+          TError,
+          Awaited<ReturnType<typeof finishSocialOAuth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFinishSocialOAuth<TData = Awaited<ReturnType<typeof finishSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof finishSocialOAuth>>,
+          TError,
+          Awaited<ReturnType<typeof finishSocialOAuth>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFinishSocialOAuth<TData = Awaited<ReturnType<typeof finishSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Finish OAuth after provider consent
+ */
+
+export function useFinishSocialOAuth<TData = Awaited<ReturnType<typeof finishSocialOAuth>>, TError = ErrorType<void | ErrorEnvelope>>(
+ provider: SocialProvider, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof finishSocialOAuth>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFinishSocialOAuthQueryOptions(provider,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

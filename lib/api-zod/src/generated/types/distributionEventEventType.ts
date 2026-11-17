@@ -12,4 +12,5 @@ export type DistributionEventEventType = typeof DistributionEventEventType[keyof
 export const DistributionEventEventType = {
   adsubmitted: 'ad.submitted',
   adapproved: 'ad.approved',
+  adchannel_post: 'ad.channel_post',
 } as const;

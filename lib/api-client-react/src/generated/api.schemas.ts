@@ -57,9 +57,11 @@ export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof Subscrip
 
 
 export const SubscriptionStatus = {
+  payment_pending: 'payment_pending',
   active: 'active',
   canceled: 'canceled',
   expired: 'expired',
+  rejected: 'rejected',
 } as const;
 
 export type SubscriptionCurrency = typeof SubscriptionCurrency[keyof typeof SubscriptionCurrency];
@@ -69,16 +71,31 @@ export const SubscriptionCurrency = {
   ZMK: 'ZMK',
 } as const;
 
+export type SubscriptionPaymentStatus = typeof SubscriptionPaymentStatus[keyof typeof SubscriptionPaymentStatus];
+
+
+export const SubscriptionPaymentStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  mock_paid: 'mock_paid',
+} as const;
+
 export interface Subscription {
   id: string;
   planId: SubscriptionPlanId;
   status: SubscriptionStatus;
   amountK: number;
   currency: SubscriptionCurrency;
+  paymentStatus: SubscriptionPaymentStatus;
   startedAt: string;
   expiresAt: string;
   /** @nullable */
   canceledAt?: string | null;
+  /** @nullable */
+  paymentReviewedAt?: string | null;
+  /** @nullable */
+  paymentReviewNote?: string | null;
 }
 
 export type AdStatus = typeof AdStatus[keyof typeof AdStatus];
@@ -150,6 +167,8 @@ export interface AdInput {
   link: string;
   /** @nullable */
   imagePath?: string | null;
+  shareToAdReachChannels?: boolean;
+  socialAccountIds?: string[];
 }
 
 export type PlanPurchaseInputPlanId = typeof PlanPurchaseInputPlanId[keyof typeof PlanPurchaseInputPlanId];
@@ -199,6 +218,7 @@ export type DistributionEventEventType = typeof DistributionEventEventType[keyof
 export const DistributionEventEventType = {
   adsubmitted: 'ad.submitted',
   adapproved: 'ad.approved',
+  adchannel_post: 'ad.channel_post',
 } as const;
 
 export type DistributionEventStatus = typeof DistributionEventStatus[keyof typeof DistributionEventStatus];
@@ -207,6 +227,9 @@ export type DistributionEventStatus = typeof DistributionEventStatus[keyof typeo
 export const DistributionEventStatus = {
   queued: 'queued',
   ready: 'ready',
+  processing: 'processing',
+  manual_required: 'manual_required',
+  needs_connection: 'needs_connection',
   delivered: 'delivered',
   failed: 'failed',
 } as const;
@@ -219,6 +242,11 @@ export interface DistributionEvent {
   eventType: DistributionEventEventType;
   status: DistributionEventStatus;
   payload: DistributionEventPayload;
+  attempts: number;
+  /** @nullable */
+  lastError?: string | null;
+  /** @nullable */
+  deliveredAt?: string | null;
   createdAt: string;
 }
 
@@ -238,6 +266,7 @@ export interface AdminOverview {
   activeAds: number;
   rejectedAds: number;
   queuedEvents: number;
+  pendingPayments: number;
   latestEvents: DistributionEvent[];
 }
 
@@ -254,6 +283,100 @@ export interface UploadUrlResponse {
   uploadURL: string;
   objectPath: string;
   metadata?: UploadUrlRequest;
+}
+
+export interface ManualPaymentRequest {
+  subscription: Subscription;
+  whatsappUrl: string;
+  whatsappNumber: string;
+  instructions: string;
+}
+
+export type AdminPaymentRequest = Subscription & {
+  userName: string;
+  email: string;
+};
+
+export type PaymentReviewInputDecision = typeof PaymentReviewInputDecision[keyof typeof PaymentReviewInputDecision];
+
+
+export const PaymentReviewInputDecision = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface PaymentReviewInput {
+  decision: PaymentReviewInputDecision;
+  /** @maxLength 1000 */
+  note?: string;
+}
+
+export type SocialProvider = typeof SocialProvider[keyof typeof SocialProvider];
+
+
+export const SocialProvider = {
+  facebook_page: 'facebook_page',
+  instagram: 'instagram',
+  linkedin: 'linkedin',
+  reddit: 'reddit',
+} as const;
+
+export type SocialChannelProvider = typeof SocialChannelProvider[keyof typeof SocialChannelProvider];
+
+
+export const SocialChannelProvider = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+  linkedin: 'linkedin',
+  reddit: 'reddit',
+} as const;
+
+export type SocialChannelMode = typeof SocialChannelMode[keyof typeof SocialChannelMode];
+
+
+export const SocialChannelMode = {
+  automatic: 'automatic',
+  manual: 'manual',
+  setup_required: 'setup_required',
+} as const;
+
+export interface SocialChannel {
+  id: string;
+  provider: SocialChannelProvider;
+  label: string;
+  url: string;
+  mode: SocialChannelMode;
+  note: string;
+}
+
+export interface SocialAccount {
+  id: string;
+  provider: SocialProvider;
+  displayName: string;
+  profileUrl: string;
+  accountType: string;
+  scopes: string[];
+  isBrandChannel: boolean;
+  connectedAt: string;
+}
+
+export interface SocialProviderStatus {
+  provider: SocialProvider;
+  configured: boolean;
+  message: string;
+}
+
+export interface SocialAccountList {
+  accounts: SocialAccount[];
+  providers: SocialProviderStatus[];
+}
+
+export interface SocialBrandUpdateInput {
+  isBrandChannel: boolean;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 export type ListAdminAdsParams = {

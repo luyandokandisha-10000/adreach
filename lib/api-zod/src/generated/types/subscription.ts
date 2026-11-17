@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SubscriptionCurrency } from './subscriptionCurrency';
+import type { SubscriptionPaymentStatus } from './subscriptionPaymentStatus';
 import type { SubscriptionPlanId } from './subscriptionPlanId';
 import type { SubscriptionStatus } from './subscriptionStatus';
 
@@ -15,8 +16,13 @@ export interface Subscription {
   status: SubscriptionStatus;
   amountK: number;
   currency: SubscriptionCurrency;
+  paymentStatus: SubscriptionPaymentStatus;
   startedAt: Date;
   expiresAt: Date;
   /** @nullable */
   canceledAt?: Date | null;
+  /** @nullable */
+  paymentReviewedAt?: Date | null;
+  /** @nullable */
+  paymentReviewNote?: string | null;
 }

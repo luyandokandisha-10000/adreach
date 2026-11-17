@@ -12,6 +12,9 @@ export type DistributionEventStatus = typeof DistributionEventStatus[keyof typeo
 export const DistributionEventStatus = {
   queued: 'queued',
   ready: 'ready',
+  processing: 'processing',
+  manual_required: 'manual_required',
+  needs_connection: 'needs_connection',
   delivered: 'delivered',
   failed: 'failed',
 } as const;

@@ -5,7 +5,11 @@ import {
   GetAdminOverviewResponse,
   ListAdminAdsQueryParams,
   ListAdminAdsResponse,
+  ListPendingPaymentsResponse,
   ListWebhookLogsResponse,
+  ReviewPaymentBody,
+  ReviewPaymentParams,
+  ReviewPaymentResponse,
   ReviewAdBody,
   ReviewAdParams,
   ReviewAdResponse,
@@ -15,6 +19,7 @@ import {
   db,
   distributionEventsTable,
   subscriptionsTable,
+  usersTable,
 } from "@workspace/db";
 import {
   getAppUser,
@@ -22,6 +27,7 @@ import {
   respondWithApiError,
 } from "../lib/adReachAuth";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { getSubscriptionExpiry } from "../lib/paymentProvider";
 
 const router: IRouter = Router();
 const objectStorage = new ObjectStorageService();
@@ -42,13 +48,17 @@ router.use(async (req, res, next): Promise<void> => {
 
 router.get("/admin/overview", async (req, res): Promise<void> => {
   try {
-    const [ads, events] = await Promise.all([
+    const [ads, events, pendingPayments] = await Promise.all([
       db.select().from(adsTable),
       db
         .select()
         .from(distributionEventsTable)
         .orderBy(desc(distributionEventsTable.createdAt))
         .limit(8),
+      db
+        .select({ id: subscriptionsTable.id })
+        .from(subscriptionsTable)
+        .where(eq(subscriptionsTable.status, "payment_pending")),
     ]);
     const queueEvents = await db
       .select({ id: distributionEventsTable.id })
@@ -60,6 +70,7 @@ router.get("/admin/overview", async (req, res): Promise<void> => {
         activeAds: ads.filter((ad) => ad.status === "active").length,
         rejectedAds: ads.filter((ad) => ad.status === "rejected").length,
         queuedEvents: queueEvents.length,
+        pendingPayments: pendingPayments.length,
         latestEvents: events,
       }),
     );
@@ -67,6 +78,116 @@ router.get("/admin/overview", async (req, res): Promise<void> => {
     respondWithApiError(req, res, error);
   }
 });
+
+router.get("/admin/subscriptions/pending-payments", async (req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: subscriptionsTable.id,
+        userId: subscriptionsTable.userId,
+        planId: subscriptionsTable.planId,
+        status: subscriptionsTable.status,
+        amountK: subscriptionsTable.amountK,
+        currency: subscriptionsTable.currency,
+        paymentStatus: subscriptionsTable.paymentStatus,
+        startedAt: subscriptionsTable.startedAt,
+        expiresAt: subscriptionsTable.expiresAt,
+        canceledAt: subscriptionsTable.canceledAt,
+        paymentReviewedAt: subscriptionsTable.paymentReviewedAt,
+        paymentReviewNote: subscriptionsTable.paymentReviewNote,
+        userName: usersTable.name,
+        email: usersTable.email,
+      })
+      .from(subscriptionsTable)
+      .innerJoin(usersTable, eq(subscriptionsTable.userId, usersTable.id))
+      .where(eq(subscriptionsTable.status, "payment_pending"))
+      .orderBy(desc(subscriptionsTable.startedAt));
+    res.json(ListPendingPaymentsResponse.parse(rows));
+  } catch (error) {
+    respondWithApiError(req, res, error);
+  }
+});
+
+router.patch(
+  "/admin/subscriptions/:id/payment-review",
+  async (req, res): Promise<void> => {
+    try {
+      const params = ReviewPaymentParams.safeParse(req.params);
+      const body = ReviewPaymentBody.safeParse(req.body);
+      if (!params.success || !body.success) {
+        res.status(400).json({ error: "Choose confirm or reject." });
+        return;
+      }
+      const now = new Date();
+      const [updated] = await db.transaction(async (tx) => {
+        const [pending] = await tx
+          .select()
+          .from(subscriptionsTable)
+          .where(
+            and(
+              eq(subscriptionsTable.id, params.data.id),
+              eq(subscriptionsTable.status, "payment_pending"),
+            ),
+          )
+          .for("update")
+          .limit(1);
+        if (!pending) return [null];
+        if (body.data.decision === "reject") {
+          return tx
+            .update(subscriptionsTable)
+            .set({
+              status: "rejected",
+              paymentStatus: "rejected",
+              paymentReviewedAt: now,
+              paymentReviewNote: body.data.note?.trim() || null,
+            })
+            .where(eq(subscriptionsTable.id, pending.id))
+            .returning();
+        }
+
+        const expiry = getSubscriptionExpiry(
+          now,
+          pending.planId === "weekly" ? "week" : "month",
+        );
+        await tx
+          .update(subscriptionsTable)
+          .set({
+            status: "canceled",
+            canceledAt: now,
+          })
+          .where(
+            and(
+              eq(subscriptionsTable.userId, pending.userId),
+              eq(subscriptionsTable.status, "active"),
+              gt(subscriptionsTable.expiresAt, now),
+            ),
+          );
+        return tx
+          .update(subscriptionsTable)
+          .set({
+            status: "active",
+            paymentStatus: "confirmed",
+            paymentReviewedAt: now,
+            paymentReviewNote: body.data.note?.trim() || null,
+            startedAt: now,
+            expiresAt: expiry,
+            canceledAt: null,
+          })
+          .where(eq(subscriptionsTable.id, pending.id))
+          .returning();
+      });
+      if (!updated) {
+        res.status(409).json({
+          error: "This payment request has already been reviewed.",
+        });
+        return;
+      }
+      res.json(ReviewPaymentResponse.parse(updated));
+    } catch (error) {
+      respondWithApiError(req, res, error);
+    }
+  },
+);
 
 router.get("/admin/ads", async (req, res): Promise<void> => {
   try {

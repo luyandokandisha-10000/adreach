@@ -18,6 +18,8 @@ tags:
     description: Administrator-only review and distribution queue
   - name: storage
     description: Image upload and serving
+  - name: social
+    description: Connected social accounts and post distribution
 paths:
   /healthz:
     get:
@@ -100,11 +102,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-  /subscriptions/mock-checkout:
+  /subscriptions/manual-payment:
     post:
-      operationId: startMockCheckout
+      operationId: requestManualPayment
       tags: [account]
-      summary: Activate a mock subscription for development
+      summary: Request payment verification through WhatsApp
       requestBody:
         required: true
         content:
@@ -113,11 +115,11 @@ paths:
               $ref: "#/components/schemas/PlanPurchaseInput"
       responses:
         "201":
-          description: Mock subscription activated
+          description: Pending payment request and WhatsApp instructions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Subscription"
+                $ref: "#/components/schemas/ManualPaymentRequest"
         "401":
           description: Sign-in required
           content:
@@ -126,6 +128,12 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "400":
           description: Invalid plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: A subscription is already active or a payment is pending
           content:
             application/json:
               schema:
@@ -279,6 +287,230 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/subscriptions/pending-payments:
+    get:
+      operationId: listPendingPayments
+      tags: [admin]
+      summary: List subscription payments awaiting confirmation
+      responses:
+        "200":
+          description: Pending WhatsApp payment requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPaymentRequest"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/subscriptions/{id}/payment-review:
+    patch:
+      operationId: reviewPayment
+      tags: [admin]
+      summary: Confirm or reject a WhatsApp payment request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentReviewInput"
+      responses:
+        "200":
+          description: Updated subscription payment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Pending payment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Payment request already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /social/channels:
+    get:
+      operationId: listSocialChannels
+      tags: [social]
+      summary: List AdReach social destinations and publishing limits
+      responses:
+        "200":
+          description: Fixed channels and their supported publishing modes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialChannel"
+  /social/accounts:
+    get:
+      operationId: listSocialAccounts
+      tags: [social]
+      summary: List social profiles connected by the signed-in user
+      responses:
+        "200":
+          description: Connected social accounts and OAuth setup availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialAccountList"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /social/accounts/{id}:
+    delete:
+      operationId: disconnectSocialAccount
+      tags: [social]
+      summary: Disconnect one of the signed-in user's social accounts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Connected account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /social/accounts/{id}/brand:
+    patch:
+      operationId: setBrandSocialAccount
+      tags: [social]
+      summary: Mark an admin-connected account as an AdReach channel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/SocialBrandUpdateInput"
+      responses:
+        "200":
+          description: Channel designation updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialAccount"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Administrator access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Connected account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /social/oauth/{provider}/start:
+    get:
+      operationId: startSocialOAuth
+      tags: [social]
+      summary: Start OAuth to connect a social profile
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/SocialProvider"
+      responses:
+        "302":
+          description: Redirect to the selected social provider
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Provider app credentials are not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /social/oauth/{provider}/callback:
+    get:
+      operationId: finishSocialOAuth
+      tags: [social]
+      summary: Finish OAuth after provider consent
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/SocialProvider"
+      responses:
+        "302":
+          description: Redirect back to the connected accounts page
+        "400":
+          description: Invalid or expired authorization state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -376,7 +608,7 @@ components:
           type: string
     Subscription:
       type: object
-      required: [id, planId, status, amountK, currency, startedAt, expiresAt]
+      required: [id, planId, status, amountK, currency, paymentStatus, startedAt, expiresAt]
       properties:
         id:
           type: string
@@ -385,12 +617,15 @@ components:
           enum: [weekly, monthly]
         status:
           type: string
-          enum: [active, canceled, expired]
+          enum: [payment_pending, active, canceled, expired, rejected]
         amountK:
           type: integer
         currency:
           type: string
           enum: [ZMK]
+        paymentStatus:
+          type: string
+          enum: [pending, confirmed, rejected, mock_paid]
         startedAt:
           type: string
           format: date-time
@@ -400,6 +635,11 @@ components:
         canceledAt:
           type: [string, "null"]
           format: date-time
+        paymentReviewedAt:
+          type: [string, "null"]
+          format: date-time
+        paymentReviewNote:
+          type: [string, "null"]
     Ad:
       type: object
       required: [id, userId, userName, email, title, description, link, imagePath, status, planId, createdAt, approvedAt]
@@ -466,6 +706,14 @@ components:
           format: uri
         imagePath:
           type: [string, "null"]
+        shareToAdReachChannels:
+          type: boolean
+          default: true
+        socialAccountIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
     PlanPurchaseInput:
       type: object
       required: [planId]
@@ -525,7 +773,7 @@ components:
             $ref: "#/components/schemas/DistributionEvent"
     DistributionEvent:
       type: object
-      required: [id, adId, eventType, status, payload, createdAt]
+      required: [id, adId, eventType, status, payload, attempts, createdAt]
       properties:
         id:
           type: string
@@ -533,19 +781,26 @@ components:
           type: string
         eventType:
           type: string
-          enum: [ad.submitted, ad.approved]
+          enum: [ad.submitted, ad.approved, ad.channel_post]
         status:
           type: string
-          enum: [queued, ready, delivered, failed]
+          enum: [queued, ready, processing, manual_required, needs_connection, delivered, failed]
         payload:
           type: object
           additionalProperties: true
+        attempts:
+          type: integer
+        lastError:
+          type: [string, "null"]
+        deliveredAt:
+          type: [string, "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
     AdminOverview:
       type: object
-      required: [pendingAds, activeAds, rejectedAds, queuedEvents, latestEvents]
+      required: [pendingAds, activeAds, rejectedAds, queuedEvents, pendingPayments, latestEvents]
       properties:
         pendingAds:
           type: integer
@@ -554,6 +809,8 @@ components:
         rejectedAds:
           type: integer
         queuedEvents:
+          type: integer
+        pendingPayments:
           type: integer
         latestEvents:
           type: array
@@ -583,4 +840,118 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/UploadUrlRequest"
+    ManualPaymentRequest:
+      type: object
+      required: [subscription, whatsappUrl, whatsappNumber, instructions]
+      properties:
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+        whatsappUrl:
+          type: string
+          format: uri
+        whatsappNumber:
+          type: string
+        instructions:
+          type: string
+    AdminPaymentRequest:
+      allOf:
+        - $ref: "#/components/schemas/Subscription"
+        - type: object
+          required: [userName, email]
+          properties:
+            userName:
+              type: string
+            email:
+              type: string
+              format: email
+    PaymentReviewInput:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        note:
+          type: string
+          maxLength: 1000
+    SocialProvider:
+      type: string
+      enum: [facebook_page, instagram, linkedin, reddit]
+    SocialChannel:
+      type: object
+      required: [id, provider, label, url, mode, note]
+      properties:
+        id:
+          type: string
+        provider:
+          type: string
+          enum: [facebook, instagram, linkedin, reddit]
+        label:
+          type: string
+        url:
+          type: string
+          format: uri
+        mode:
+          type: string
+          enum: [automatic, manual, setup_required]
+        note:
+          type: string
+    SocialAccount:
+      type: object
+      required: [id, provider, displayName, profileUrl, accountType, scopes, isBrandChannel, connectedAt]
+      properties:
+        id:
+          type: string
+        provider:
+          $ref: "#/components/schemas/SocialProvider"
+        displayName:
+          type: string
+        profileUrl:
+          type: string
+          format: uri
+        accountType:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        isBrandChannel:
+          type: boolean
+        connectedAt:
+          type: string
+          format: date-time
+    SocialProviderStatus:
+      type: object
+      required: [provider, configured, message]
+      properties:
+        provider:
+          $ref: "#/components/schemas/SocialProvider"
+        configured:
+          type: boolean
+        message:
+          type: string
+    SocialAccountList:
+      type: object
+      required: [accounts, providers]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialAccount"
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialProviderStatus"
+    SocialBrandUpdateInput:
+      type: object
+      required: [isBrandChannel]
+      properties:
+        isBrandChannel:
+          type: boolean
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
 

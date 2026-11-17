@@ -29,22 +29,32 @@ export const plans: PlanDefinition[] = [
   },
 ];
 
-export interface PaymentProvider {
-  startPayment(input: {
-    userId: string;
-    plan: PlanDefinition;
-  }): Promise<{ status: "mock_paid"; reference: string }>;
+export function createManualPaymentReference(): string {
+  return `AR-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
 }
 
-// Swap this adapter for a verified Flutterwave/DPO implementation later.
-export const paymentProvider: PaymentProvider = {
-  async startPayment() {
-    return {
-      status: "mock_paid",
-      reference: `mock_${randomUUID()}`,
-    };
-  },
-};
+export function getSubscriptionExpiry(
+  start: Date,
+  interval: PlanDefinition["interval"],
+): Date {
+  const expiresAt = new Date(start);
+  if (interval === "week") {
+    expiresAt.setUTCDate(expiresAt.getUTCDate() + 7);
+    return expiresAt;
+  }
+  const dayOfMonth = expiresAt.getUTCDate();
+  expiresAt.setUTCDate(1);
+  expiresAt.setUTCMonth(expiresAt.getUTCMonth() + 1);
+  const lastDayOfMonth = new Date(
+    Date.UTC(
+      expiresAt.getUTCFullYear(),
+      expiresAt.getUTCMonth() + 1,
+      0,
+    ),
+  ).getUTCDate();
+  expiresAt.setUTCDate(Math.min(dayOfMonth, lastDayOfMonth));
+  return expiresAt;
+}
 
 export function getPlan(planId: string): PlanDefinition | undefined {
   return plans.find((plan) => plan.id === planId);

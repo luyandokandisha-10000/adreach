@@ -4,8 +4,8 @@ import {
   CancelSubscriptionResponse,
   GetAccountResponse,
   ListPlansResponse,
-  StartMockCheckoutBody,
-  StartMockCheckoutResponse,
+  RequestManualPaymentBody,
+  RequestManualPaymentResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -18,10 +18,11 @@ import {
   requireAuth,
   respondWithApiError,
 } from "../lib/adReachAuth";
-import { getPlan, paymentProvider, plans } from "../lib/paymentProvider";
+import { createManualPaymentReference, getPlan, plans } from "../lib/paymentProvider";
 
 const router: IRouter = Router();
 const FREE_ADS_LIMIT = 5;
+const PAYMENT_WHATSAPP_NUMBER = "260760312951";
 
 router.get("/plans", (_req, res): void => {
   res.json(ListPlansResponse.parse(plans));
@@ -93,11 +94,11 @@ router.get("/account", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.post(
-  "/subscriptions/mock-checkout",
+  "/subscriptions/manual-payment",
   requireAuth,
   async (req, res): Promise<void> => {
     try {
-      const body = StartMockCheckoutBody.safeParse(req.body);
+      const body = RequestManualPaymentBody.safeParse(req.body);
       if (!body.success) {
         res.status(400).json({ error: "Choose a valid subscription plan." });
         return;
@@ -110,55 +111,65 @@ router.post(
         return;
       }
 
-      const payment = await paymentProvider.startPayment({
-        userId: user.id,
-        plan,
-      });
-      const startedAt = new Date();
-      const expiresAt = new Date(startedAt);
-      if (plan.interval === "week") {
-        expiresAt.setUTCDate(expiresAt.getUTCDate() + 7);
-      } else {
-        const dayOfMonth = expiresAt.getUTCDate();
-        expiresAt.setUTCDate(1);
-        expiresAt.setUTCMonth(expiresAt.getUTCMonth() + 1);
-        const lastDayOfMonth = new Date(
-          Date.UTC(
-            expiresAt.getUTCFullYear(),
-            expiresAt.getUTCMonth() + 1,
-            0,
-          ),
-        ).getUTCDate();
-        expiresAt.setUTCDate(Math.min(dayOfMonth, lastDayOfMonth));
+      const now = new Date();
+      const [latestSubscription] = await db
+        .select()
+        .from(subscriptionsTable)
+        .where(eq(subscriptionsTable.userId, user.id))
+        .orderBy(desc(subscriptionsTable.startedAt))
+        .limit(1);
+      const hasCurrentAccess =
+        latestSubscription !== undefined &&
+        (latestSubscription.status === "active" ||
+          latestSubscription.status === "canceled") &&
+        latestSubscription.expiresAt > now;
+      if (hasCurrentAccess) {
+        res.status(409).json({
+          error: "Your current subscription is still active.",
+        });
+        return;
       }
-
-      await db
-        .update(subscriptionsTable)
-        .set({ status: "canceled", canceledAt: startedAt, expiresAt: startedAt })
-        .where(
-          and(
-            eq(subscriptionsTable.userId, user.id),
-            eq(subscriptionsTable.status, "active"),
-            gt(subscriptionsTable.expiresAt, startedAt),
-          ),
-        );
-
+      if (latestSubscription?.status === "payment_pending") {
+        res.status(409).json({
+          error: "You already have a payment request awaiting confirmation.",
+        });
+        return;
+      }
+      const paymentReference = createManualPaymentReference();
       const [subscription] = await db
         .insert(subscriptionsTable)
         .values({
-          id: payment.reference,
+          id: paymentReference,
           userId: user.id,
           planId: plan.id,
-          status: "active",
+          status: "payment_pending",
           amountK: plan.amountK,
           currency: plan.currency,
-          paymentStatus: payment.status,
-          startedAt,
-          expiresAt,
+          paymentStatus: "pending",
+          startedAt: now,
+          expiresAt: now,
         })
         .returning();
 
-      res.status(201).json(StartMockCheckoutResponse.parse(subscription));
+      const message = [
+        "Hi, I want to activate my AdReach subscription.",
+        `Plan: ${plan.name} (K${plan.amountK} per ${plan.interval}).`,
+        `Payment reference: ${paymentReference}.`,
+        `Name: ${user.name}.`,
+        `Email: ${user.email}.`,
+        "I have made the payment and will attach my screenshot here.",
+      ].join(" ");
+      const whatsappUrl = new URL(`https://wa.me/${PAYMENT_WHATSAPP_NUMBER}`);
+      whatsappUrl.searchParams.set("text", message);
+      res.status(201).json(
+        RequestManualPaymentResponse.parse({
+          subscription,
+          whatsappUrl: whatsappUrl.toString(),
+          whatsappNumber: "+260 760 312 951",
+          instructions:
+            "Send your payment screenshot in this WhatsApp chat. Paid access starts only after an admin confirms it.",
+        }),
+      );
     } catch (error) {
       respondWithApiError(req, res, error);
     }

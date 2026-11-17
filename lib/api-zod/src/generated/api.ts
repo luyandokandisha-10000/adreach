@@ -67,12 +67,15 @@ export const GetAccountResponse = zod.object({
   "subscription": zod.union([zod.object({
   "id": zod.string(),
   "planId": zod.enum(['weekly', 'monthly']),
-  "status": zod.enum(['active', 'canceled', 'expired']),
+  "status": zod.enum(['payment_pending', 'active', 'canceled', 'expired', 'rejected']),
   "amountK": zod.number().int(),
   "currency": zod.enum(['ZMK']),
+  "paymentStatus": zod.enum(['pending', 'confirmed', 'rejected', 'mock_paid']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
-  "canceledAt": zod.coerce.date().nullish()
+  "canceledAt": zod.coerce.date().nullish(),
+  "paymentReviewedAt": zod.coerce.date().nullish(),
+  "paymentReviewNote": zod.string().nullish()
 }),zod.null()]).optional(),
   "freeAdsUsed": zod.number().int(),
   "freeAdsLimit": zod.number().int(),
@@ -80,9 +83,12 @@ export const GetAccountResponse = zod.object({
   "events": zod.array(zod.object({
   "id": zod.string(),
   "adId": zod.string(),
-  "eventType": zod.enum(['ad.submitted', 'ad.approved']),
-  "status": zod.enum(['queued', 'ready', 'delivered', 'failed']),
+  "eventType": zod.enum(['ad.submitted', 'ad.approved', 'ad.channel_post']),
+  "status": zod.enum(['queued', 'ready', 'processing', 'manual_required', 'needs_connection', 'delivered', 'failed']),
   "payload": zod.record(zod.string(), zod.unknown()),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 }))
 })
@@ -97,14 +103,16 @@ export const createAdBodyTitleMax = 160;
 
 export const createAdBodyDescriptionMax = 3000;
 
-
+export const createAdBodyShareToAdReachChannelsDefault = true;
 
 export const CreateAdBody = zod.object({
   "userName": zod.string().min(1).max(createAdBodyUserNameMax),
   "title": zod.string().min(1).max(createAdBodyTitleMax),
   "description": zod.string().min(1).max(createAdBodyDescriptionMax),
   "link": zod.string().url(),
-  "imagePath": zod.string().nullish()
+  "imagePath": zod.string().nullish(),
+  "shareToAdReachChannels": zod.boolean().default(createAdBodyShareToAdReachChannelsDefault),
+  "socialAccountIds": zod.array(zod.string()).optional()
 })
 
 export const CreateAdResponse = zod.object({
@@ -125,21 +133,29 @@ export const CreateAdResponse = zod.object({
 
 
 /**
- * @summary Activate a mock subscription for development
+ * @summary Request payment verification through WhatsApp
  */
-export const StartMockCheckoutBody = zod.object({
+export const RequestManualPaymentBody = zod.object({
   "planId": zod.enum(['weekly', 'monthly'])
 })
 
-export const StartMockCheckoutResponse = zod.object({
+export const RequestManualPaymentResponse = zod.object({
+  "subscription": zod.object({
   "id": zod.string(),
   "planId": zod.enum(['weekly', 'monthly']),
-  "status": zod.enum(['active', 'canceled', 'expired']),
+  "status": zod.enum(['payment_pending', 'active', 'canceled', 'expired', 'rejected']),
   "amountK": zod.number().int(),
   "currency": zod.enum(['ZMK']),
+  "paymentStatus": zod.enum(['pending', 'confirmed', 'rejected', 'mock_paid']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
-  "canceledAt": zod.coerce.date().nullish()
+  "canceledAt": zod.coerce.date().nullish(),
+  "paymentReviewedAt": zod.coerce.date().nullish(),
+  "paymentReviewNote": zod.string().nullish()
+}),
+  "whatsappUrl": zod.string().url(),
+  "whatsappNumber": zod.string(),
+  "instructions": zod.string()
 })
 
 
@@ -149,12 +165,15 @@ export const StartMockCheckoutResponse = zod.object({
 export const CancelSubscriptionResponse = zod.object({
   "id": zod.string(),
   "planId": zod.enum(['weekly', 'monthly']),
-  "status": zod.enum(['active', 'canceled', 'expired']),
+  "status": zod.enum(['payment_pending', 'active', 'canceled', 'expired', 'rejected']),
   "amountK": zod.number().int(),
   "currency": zod.enum(['ZMK']),
+  "paymentStatus": zod.enum(['pending', 'confirmed', 'rejected', 'mock_paid']),
   "startedAt": zod.coerce.date(),
   "expiresAt": zod.coerce.date(),
-  "canceledAt": zod.coerce.date().nullish()
+  "canceledAt": zod.coerce.date().nullish(),
+  "paymentReviewedAt": zod.coerce.date().nullish(),
+  "paymentReviewNote": zod.string().nullish()
 })
 
 
@@ -166,12 +185,16 @@ export const GetAdminOverviewResponse = zod.object({
   "activeAds": zod.number().int(),
   "rejectedAds": zod.number().int(),
   "queuedEvents": zod.number().int(),
+  "pendingPayments": zod.number().int(),
   "latestEvents": zod.array(zod.object({
   "id": zod.string(),
   "adId": zod.string(),
-  "eventType": zod.enum(['ad.submitted', 'ad.approved']),
-  "status": zod.enum(['queued', 'ready', 'delivered', 'failed']),
+  "eventType": zod.enum(['ad.submitted', 'ad.approved', 'ad.channel_post']),
+  "status": zod.enum(['queued', 'ready', 'processing', 'manual_required', 'needs_connection', 'delivered', 'failed']),
   "payload": zod.record(zod.string(), zod.unknown()),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 }))
 })
@@ -243,12 +266,159 @@ export const ReviewAdResponse = zod.object({
 export const ListWebhookLogsResponseItem = zod.object({
   "id": zod.string(),
   "adId": zod.string(),
-  "eventType": zod.enum(['ad.submitted', 'ad.approved']),
-  "status": zod.enum(['queued', 'ready', 'delivered', 'failed']),
+  "eventType": zod.enum(['ad.submitted', 'ad.approved', 'ad.channel_post']),
+  "status": zod.enum(['queued', 'ready', 'processing', 'manual_required', 'needs_connection', 'delivered', 'failed']),
   "payload": zod.record(zod.string(), zod.unknown()),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "deliveredAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListWebhookLogsResponse = zod.array(ListWebhookLogsResponseItem)
+
+
+/**
+ * @summary List subscription payments awaiting confirmation
+ */
+export const ListPendingPaymentsResponseItem = zod.object({
+  "id": zod.string(),
+  "planId": zod.enum(['weekly', 'monthly']),
+  "status": zod.enum(['payment_pending', 'active', 'canceled', 'expired', 'rejected']),
+  "amountK": zod.number().int(),
+  "currency": zod.enum(['ZMK']),
+  "paymentStatus": zod.enum(['pending', 'confirmed', 'rejected', 'mock_paid']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "canceledAt": zod.coerce.date().nullish(),
+  "paymentReviewedAt": zod.coerce.date().nullish(),
+  "paymentReviewNote": zod.string().nullish()
+}).and(zod.object({
+  "userName": zod.string(),
+  "email": zod.string().email()
+}))
+export const ListPendingPaymentsResponse = zod.array(ListPendingPaymentsResponseItem)
+
+
+/**
+ * @summary Confirm or reject a WhatsApp payment request
+ */
+export const ReviewPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const reviewPaymentBodyNoteMax = 1000;
+
+
+
+export const ReviewPaymentBody = zod.object({
+  "decision": zod.enum(['approve', 'reject']),
+  "note": zod.string().max(reviewPaymentBodyNoteMax).optional()
+})
+
+export const ReviewPaymentResponse = zod.object({
+  "id": zod.string(),
+  "planId": zod.enum(['weekly', 'monthly']),
+  "status": zod.enum(['payment_pending', 'active', 'canceled', 'expired', 'rejected']),
+  "amountK": zod.number().int(),
+  "currency": zod.enum(['ZMK']),
+  "paymentStatus": zod.enum(['pending', 'confirmed', 'rejected', 'mock_paid']),
+  "startedAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date(),
+  "canceledAt": zod.coerce.date().nullish(),
+  "paymentReviewedAt": zod.coerce.date().nullish(),
+  "paymentReviewNote": zod.string().nullish()
+})
+
+
+/**
+ * @summary List AdReach social destinations and publishing limits
+ */
+export const ListSocialChannelsResponseItem = zod.object({
+  "id": zod.string(),
+  "provider": zod.enum(['facebook', 'instagram', 'linkedin', 'reddit']),
+  "label": zod.string(),
+  "url": zod.string().url(),
+  "mode": zod.enum(['automatic', 'manual', 'setup_required']),
+  "note": zod.string()
+})
+export const ListSocialChannelsResponse = zod.array(ListSocialChannelsResponseItem)
+
+
+/**
+ * @summary List social profiles connected by the signed-in user
+ */
+export const ListSocialAccountsResponse = zod.object({
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "provider": zod.enum(['facebook_page', 'instagram', 'linkedin', 'reddit']),
+  "displayName": zod.string(),
+  "profileUrl": zod.string().url(),
+  "accountType": zod.string(),
+  "scopes": zod.array(zod.string()),
+  "isBrandChannel": zod.boolean(),
+  "connectedAt": zod.coerce.date()
+})),
+  "providers": zod.array(zod.object({
+  "provider": zod.enum(['facebook_page', 'instagram', 'linkedin', 'reddit']),
+  "configured": zod.boolean(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Disconnect one of the signed-in user's social accounts
+ */
+export const DisconnectSocialAccountParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DisconnectSocialAccountResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Mark an admin-connected account as an AdReach channel
+ */
+export const SetBrandSocialAccountParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SetBrandSocialAccountBody = zod.object({
+  "isBrandChannel": zod.boolean()
+})
+
+export const SetBrandSocialAccountResponse = zod.object({
+  "id": zod.string(),
+  "provider": zod.enum(['facebook_page', 'instagram', 'linkedin', 'reddit']),
+  "displayName": zod.string(),
+  "profileUrl": zod.string().url(),
+  "accountType": zod.string(),
+  "scopes": zod.array(zod.string()),
+  "isBrandChannel": zod.boolean(),
+  "connectedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Start OAuth to connect a social profile
+ */
+export const StartSocialOAuthParams = zod.object({
+  "provider": zod.enum(['facebook_page', 'instagram', 'linkedin', 'reddit'])
+})
+
+export const StartSocialOAuthResponse = zod.void()
+
+
+/**
+ * @summary Finish OAuth after provider consent
+ */
+export const FinishSocialOAuthParams = zod.object({
+  "provider": zod.enum(['facebook_page', 'instagram', 'linkedin', 'reddit'])
+})
+
+export const FinishSocialOAuthResponse = zod.void()
 
 
 /**

@@ -25,4 +25,6 @@ export interface AdInput {
   link: string;
   /** @nullable */
   imagePath?: string | null;
+  shareToAdReachChannels?: boolean;
+  socialAccountIds?: string[];
 }

@@ -15,5 +15,10 @@ export interface DistributionEvent {
   eventType: DistributionEventEventType;
   status: DistributionEventStatus;
   payload: DistributionEventPayload;
+  attempts: number;
+  /** @nullable */
+  lastError?: string | null;
+  /** @nullable */
+  deliveredAt?: Date | null;
   createdAt: Date;
 }
