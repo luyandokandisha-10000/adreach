@@ -14,12 +14,12 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL, type FirebaseStorage } from 'firebase/storage';
 
 // Firebase configuration parameters sourced from Vite environment variables.
-// In development or when values are omitted, fallback identifiers are supplied.
+// Project ID provided: adreachzm
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'adreach-zambia.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'adreach-zambia',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'adreach-zambia.appspot.com',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'adreachzm.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'adreachzm',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'adreachzm.firebasestorage.app',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
 };
@@ -27,8 +27,7 @@ const firebaseConfig = {
 export function isFirebaseConfigured(): boolean {
   return Boolean(
     import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-    import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'adreach-zambia'
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
   );
 }
 
