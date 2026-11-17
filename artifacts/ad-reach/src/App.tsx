@@ -21,10 +21,15 @@ import { Link, Redirect, Route, Switch, Router as WouterRouter, useLocation } fr
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { saveAdToFirestore } from '@/lib/firebase';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-const clerkPubKey = publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+const defaultClerkKey = 'pk_test_bGlrZWQtcHVwLTkxLmNsZXJrLmFjY291bnRzLmRldiQ';
+const clerkPubKey =
+  publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) ||
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  defaultClerkKey;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path; }
 
@@ -840,6 +845,17 @@ function SubmissionPage() {
           socialAccountIds: selectedGroupIds,
         },
       });
+
+      // Also persist to Firebase Cloud Firestore
+      saveAdToFirestore({
+        headline: title.trim(),
+        copy: description.trim(),
+        targetUrl: link.trim(),
+        category: groupCategory || 'General Business',
+        status: 'pending_review',
+        selectedCommunities: selectedGroupIds,
+        userEmail: data.user.email,
+      }).catch((fbErr) => console.warn('Firestore optional sync notice:', fbErr));
       queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
       setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview('');
       setSuccess('Your ad is in and queued for social community broadcast! Check your dashboard.');
@@ -1296,7 +1312,7 @@ function ClerkRoutes() {
 function HomeRoute() { return <><Show when="signed-in"><Redirect to="/dashboard" /></Show><Show when="signed-out"><Home /></Show></>; }
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
 function App() {
-  if (!clerkPubKey) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+  const activeKey = clerkPubKey || defaultClerkKey;
   return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={basePath}><RoutedErrorBoundary><ClerkRoutes /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 export default App;
