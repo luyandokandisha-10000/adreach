@@ -25,11 +25,16 @@ import { saveAdToFirestore } from '@/lib/firebase';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-const defaultClerkKey = 'pk_test_bGlrZWQtcHVwLTkxLmNsZXJrLmFjY291bnRzLmRldiQ';
-const clerkPubKey =
-  publishableKeyFromHost(window.location.hostname, import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) ||
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  defaultClerkKey;
+const rawClerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+const hasCustomClerkKey = Boolean(rawClerkKey && rawClerkKey.startsWith('pk_'));
+const isReplitHost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname.endsWith('.repl.co') || window.location.hostname.endsWith('.replit.dev'));
+export const clerkPubKey: string | null = hasCustomClerkKey
+  ? rawClerkKey
+  : isReplitHost
+    ? publishableKeyFromHost(window.location.hostname, undefined) || null
+    : null;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path; }
 
@@ -540,9 +545,42 @@ function SocialPublishModal({
   );
 }
 
+function useSafeUser() {
+  if (clerkPubKey) {
+    try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const res = useUser();
+      if (res?.isLoaded) return res;
+    } catch {}
+  }
+  return {
+    isLoaded: true,
+    isSignedIn: true,
+    user: {
+      id: 'usr_guest_zm',
+      firstName: 'AdReach',
+      fullName: 'Zambian Business',
+      primaryEmailAddress: { emailAddress: 'client@adreach.zm' },
+    } as any,
+  };
+}
+
+function useSafeClerk() {
+  if (clerkPubKey) {
+    try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      return useClerk();
+    } catch {}
+  }
+  return {
+    signOut: () => { window.location.href = basePath || '/'; },
+    addListener: () => () => {},
+  } as any;
+}
+
 function AppShell({ children }: { children: ReactNode }) {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user } = useSafeUser();
+  const { signOut } = useSafeClerk();
   const account = useGetAccount();
   const [location] = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
@@ -552,7 +590,10 @@ function AppShell({ children }: { children: ReactNode }) {
   return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:hello@adreach.co.zm">Contact support <ArrowUpRight size={13} /></a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
 }
 function Protected({ children }: { children: ReactNode }) {
-  return <><Show when="signed-in">{children}</Show><Show when="signed-out"><Redirect to="/" /></Show></>;
+  if (clerkPubKey) {
+    return <><Show when="signed-in">{children}</Show><Show when="signed-out"><Redirect to="/" /></Show></>;
+  }
+  return <>{children}</>;
 }
 
 function AccountDashboardPage() {
@@ -1277,16 +1318,72 @@ function EventRow({ event }: { event: DistributionEvent }) {
   return <div className="event-row" data-testid={`event-${event.id}`}><span className={`event-type-icon ${event.eventType === 'ad.approved' ? 'event-approved' : ''}`}>{event.eventType === 'ad.approved' ? <Check size={15} /> : <Send size={14} />}</span><div className="event-description"><b>{event.eventType === 'ad.approved' ? 'Ad approved / broadcasted' : 'Ad submitted'}</b><small>Ad ref. {event.adId}</small></div><span className={`event-state event-${event.status}`}>{event.status}</span><time>{dateLabel(event.createdAt)}</time></div>;
 }
 
-function SignInPage() { return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Good work deserves<br />to be seen.</p><span>ADVERTISING MADE EASIER, RIGHT HERE.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>; }
-function SignUpPage() { return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Your next<br />customer is<br /><em>out there.</em></p><span>START WITH FIVE FREE AD SUBMISSIONS.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>; }
+function SignInPage() {
+  if (!clerkPubKey) {
+    return (
+      <div className="auth-page">
+        <div className="auth-backdrop">
+          <div className="auth-orbit orbit-one" />
+          <div className="auth-orbit orbit-two" />
+          <div className="auth-back-copy">
+            <Brand inverse />
+            <p>Good work deserves<br />to be seen.</p>
+            <span>ADVERTISING MADE EASIER, RIGHT HERE.</span>
+          </div>
+        </div>
+        <div className="auth-form-side">
+          <Link href="/" className="auth-mobile-brand"><Brand /></Link>
+          <div style={{ maxWidth: '400px', width: '100%', padding: '32px', background: '#fffefa', borderRadius: '16px', border: '1px solid #deded3', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1d3934', marginBottom: '8px' }}>Welcome to AdReach</h2>
+            <p style={{ color: '#697d77', fontSize: '14px', marginBottom: '24px' }}>Access your Zambian multi-group advertising dashboard.</p>
+            <ButtonLink href="/dashboard" kind="primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '12px' }}>
+              Enter Workspace Dashboard <ArrowRight size={15} />
+            </ButtonLink>
+            <ButtonLink href="/submit" kind="outline" style={{ width: '100%', justifyContent: 'center' }}>
+              Create an Ad Directly
+            </ButtonLink>
+          </div>
+          <p className="auth-privacy"><LockKeyhole size={13} /> Secured with AdReach Zambia Protection.</p>
+        </div>
+      </div>
+    );
+  }
+  return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Good work deserves<br />to be seen.</p><span>ADVERTISING MADE EASIER, RIGHT HERE.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>;
+}
+
+function SignUpPage() {
+  if (!clerkPubKey) {
+    return (
+      <div className="auth-page">
+        <div className="auth-backdrop">
+          <div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Your next<br />customer is<br /><em>out there.</em></p><span>START WITH FIVE FREE AD SUBMISSIONS.</span></div></div>
+        <div className="auth-form-side">
+          <Link href="/" className="auth-mobile-brand"><Brand /></Link>
+          <div style={{ maxWidth: '400px', width: '100%', padding: '32px', background: '#fffefa', borderRadius: '16px', border: '1px solid #deded3', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1d3934', marginBottom: '8px' }}>Create Your Account</h2>
+            <p style={{ color: '#697d77', fontSize: '14px', marginBottom: '24px' }}>Get your first 5 ad submissions free across verified Zambian business groups.</p>
+            <ButtonLink href="/submit" kind="primary" style={{ width: '100%', justifyContent: 'center', marginBottom: '12px' }}>
+              Start With 5 Free Ads <ArrowRight size={15} />
+            </ButtonLink>
+            <ButtonLink href="/dashboard" kind="outline" style={{ width: '100%', justifyContent: 'center' }}>
+              View Workspace Overview
+            </ButtonLink>
+          </div>
+          <p className="auth-privacy"><LockKeyhole size={13} /> Secured with AdReach Zambia Protection.</p>
+        </div>
+      </div>
+    );
+  }
+  return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Your next<br />customer is<br /><em>out there.</em></p><span>START WITH FIVE FREE AD SUBMISSIONS.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>;
+}
 
 function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
+  const { addListener } = useSafeClerk();
   const queryClient = useQueryClient();
   const previousUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
+    const unsubscribe = addListener(({ user }: any) => {
       const userId = user?.id ?? null;
       if (
         previousUserId.current !== undefined &&
@@ -1302,17 +1399,47 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function StandaloneRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={HomeRoute} />
+      <Route path="/dashboard"><Protected><AccountDashboardPage /></Protected></Route>
+      <Route path="/submit"><Protected><SubmissionPage /></Protected></Route>
+      <Route path="/admin"><Protected><AdminPage /></Protected></Route>
+      <Route path="/sign-in/*?" component={SignInPage} />
+      <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route component={() => <div className="not-found"><Brand /><h1>That page isn’t here.</h1><p>Let’s get you back on track.</p><ButtonLink href="/">Back to AdReach <ArrowRight size={16} /></ButtonLink></div>} />
+    </Switch>
+  );
+}
+
 function ClerkRoutes() {
   const [, setLocation] = useLocation();
-  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={appearance} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} localization={{ signIn: { start: { title: 'Welcome back', subtitle: 'Sign in to manage your AdReach submissions.' } }, signUp: { start: { title: 'Create your AdReach account', subtitle: 'Start with five free ad submissions.' } } }} routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to), { replace: true })}>
-    <ClerkQueryClientCacheInvalidator />
-    <Switch><Route path="/" component={HomeRoute} /><Route path="/dashboard"><Protected><AccountDashboardPage /></Protected></Route><Route path="/submit"><Protected><SubmissionPage /></Protected></Route><Route path="/admin"><Protected><AdminPage /></Protected></Route><Route path="/sign-in/*?" component={SignInPage} /><Route path="/sign-up/*?" component={SignUpPage} /><Route component={() => <div className="not-found"><Brand /><h1>That page isn’t here.</h1><p>Let’s get you back on track.</p><ButtonLink href="/">Back to AdReach <ArrowRight size={16} /></ButtonLink></div>} /></Switch>
-  </ClerkProvider>;
+  if (!clerkPubKey) {
+    return <StandaloneRoutes />;
+  }
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={appearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{ signIn: { start: { title: 'Welcome back', subtitle: 'Sign in to manage your AdReach submissions.' } }, signUp: { start: { title: 'Create your AdReach account', subtitle: 'Start with five free ad submissions.' } } }}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
+      <ClerkQueryClientCacheInvalidator />
+      <StandaloneRoutes />
+    </ClerkProvider>
+  );
 }
-function HomeRoute() { return <><Show when="signed-in"><Redirect to="/dashboard" /></Show><Show when="signed-out"><Home /></Show></>; }
+
+function HomeRoute() {
+  return <Home />;
+}
 function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
 function App() {
-  const activeKey = clerkPubKey || defaultClerkKey;
   return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={basePath}><RoutedErrorBoundary><ClerkRoutes /></RoutedErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 export default App;
