@@ -464,7 +464,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .upload-box > span:last-of-type { color:#768579; font-size:12px; }
 .upload-box input { position:absolute; width:1px !important; height:1px; opacity:0; }
 .upload-box.has-preview { min-height:180px; padding:12px; }
-.upload-box.has-preview img { max-height:160px; max-width:100%; object-fit:contain; border-radius:6px; }
+.upload-box.has-preview img,.upload-box.has-preview video { max-height:200px; max-width:100%; object-fit:contain; border-radius:6px; }
 .upload-change { display:flex; align-items:center; gap:6px; color:#2c6b52; font-size:13px; font-weight:700; }
 .remove-file { display:flex; align-items:center; gap:5px; margin-top:8px; border:0; color:#9e6257; background:none; cursor:pointer; font-size:13px; font-weight:600; }
 .form-disclosure { display:flex; align-items:flex-start; gap:10px; margin-top:19px; padding:14px; border-radius:8px; color:#55695d; background:#eef2e9; font-size:13px; line-height:1.6; }

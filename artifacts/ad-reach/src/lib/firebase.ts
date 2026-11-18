@@ -207,6 +207,8 @@ export interface FirebaseAdDocument {
   status: 'pending' | 'approved' | 'active' | 'rejected';
   selectedCommunities?: string[];
   imageUrl?: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
   contactPhone?: string;
   userEmail?: string;
   userId?: string;

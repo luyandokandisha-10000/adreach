@@ -5,9 +5,9 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BadgeCheck, Check, ChevronDown, CircleHelp,
-  Clock3, Copy, Download, ExternalLink, FileImage, Globe, ImagePlus, Instagram, Link2,
-  LoaderCircle, LockKeyhole, Menu, Megaphone, MessageSquareText, MoreHorizontal, Plus,
-  RefreshCw, Search, Send, Share2, ShieldCheck, Smartphone, Sparkles, Users, X, XCircle, Zap,
+  Clock3, Copy, Download, ExternalLink, FileImage, Film, Globe, ImagePlus, Instagram, Link2,
+  LoaderCircle, LockKeyhole, Menu, Megaphone, MessageSquareText, MoreHorizontal, Play, PlayCircle, Plus,
+  RefreshCw, Search, Send, Share2, ShieldCheck, Smartphone, Sparkles, Users, Video, X, XCircle, Zap,
 } from 'lucide-react';
 import {
   getGetAccountQueryKey, getGetAdminOverviewQueryKey, getListAdminAdsQueryKey,
@@ -44,6 +44,23 @@ export const clerkPubKey: string | null = hasCustomClerkKey
     : null;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path; }
+
+export function getMediaSource(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+    return path;
+  }
+  return `/api/storage${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
+export function isVideoMedia(path: string | null | undefined, videoUrl?: string | null): boolean {
+  if (videoUrl) return true;
+  if (!path) return false;
+  return path.startsWith('data:video/') ||
+    (path.startsWith('blob:') && (path.includes('video') || false)) ||
+    /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(path) ||
+    /youtube\.com|youtu\.be|tiktok\.com|vimeo\.com/i.test(path);
+}
 
 export interface Community {
   id: string;
@@ -406,21 +423,38 @@ function SocialPublishModal({
 
   const publishNow = async () => {
     setPublishing(true);
-    const postText = [
+    const videoLink = (ad as any).videoUrl || (isVideoMedia(ad.imagePath) ? ad.imagePath : null);
+
+    const postLines = [
       `📢 *${ad.title.toUpperCase()}*`,
       '',
       ad.description,
       '',
-      `👉 Details & Contact: ${ad.link}`,
-      '',
-      'Featured on AdReach Zambia #Zambia #Lusaka #Copperbelt #AdReach',
-    ].join('\n');
+    ];
+
+    if (videoLink) {
+      postLines.push(`🎬 *Promo Video:* ${videoLink}`);
+      postLines.push('');
+    }
+
+    postLines.push(`👉 *Contact & Inquiries:* ${ad.link}`);
+    postLines.push('');
+    postLines.push('✨ Featured on AdReach Zambia #Zambia #Lusaka #Copperbelt #ZambiaBusiness #AdReach');
+
+    const postText = postLines.join('\n');
+
+    // Automatically copy text to clipboard for convenience
+    try {
+      await navigator.clipboard.writeText(postText);
+      setCopied(true);
+    } catch {}
 
     const shareIntents = {
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(postText)}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(postText)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ad.link)}&quote=${encodeURIComponent(postText)}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(ad.title + ' - ' + ad.link)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(ad.title + (videoLink ? ' (Watch Video)' : '') + ' - ' + ad.link)}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ad.link)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(ad.link)}&text=${encodeURIComponent(postText)}`,
       formattedText: postText,
     };
 
@@ -437,7 +471,7 @@ function SocialPublishModal({
       });
       if (res.ok) {
         const json = await res.json();
-        setResult(json);
+        setResult({ ...json, shareIntents });
         setPublishing(false);
         return;
       }
@@ -446,7 +480,7 @@ function SocialPublishModal({
     // Standalone & GitHub Pages seamless delivery
     setResult({
       success: true,
-      message: `Your ad is live and queued across ${selectedIds.length} target Zambian communities and channels!`,
+      message: `Your ad is live and prepared for broadcast across ${selectedIds.length} target Zambian communities!`,
       channelsCount: selectedIds.length,
       shareIntents,
     });
@@ -454,19 +488,32 @@ function SocialPublishModal({
   };
 
   const copyPost = () => {
-    const text = result?.shareIntents?.formattedText || [
-      `📢 *${ad.title.toUpperCase()}*`,
-      '',
-      ad.description,
-      '',
-      `👉 Details & Contact: ${ad.link}`,
-      '',
-      'Featured on AdReach Zambia #Zambia #Lusaka #AdReach',
-    ].join('\n');
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const text = result?.shareIntents?.formattedText;
+    if (text) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
+
+  const triggerNativeShare = async () => {
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({
+          title: ad.title,
+          text: result?.shareIntents?.formattedText || ad.description,
+          url: ad.link,
+        });
+      } catch (err) {
+        console.warn('Share cancelled or not supported:', err);
+      }
+    } else {
+      copyPost();
+      alert('Text copied to clipboard! You can now paste into WhatsApp, Facebook, or any app.');
+    }
+  };
+
+  const selectedCommunitiesList = allAvailable.filter((c) => selectedIds.includes(c.id));
 
   return (
     <div className="dist-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
@@ -483,25 +530,38 @@ function SocialPublishModal({
 
         {result ? (
           <div className="social-dist-success">
-            <div className="notice-banner" style={{ marginTop: '12px' }}>
+            <div className="notice-banner" style={{ marginTop: '14px' }}>
               <Check size={16} /> {result.message}
             </div>
 
             <div className="copy-post-box">
-              <small style={{ fontWeight: 700, color: '#24483e' }}>FORMATTED PROMOTIONAL POST</small>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <small style={{ fontWeight: 700, color: '#24483e' }}>FORMATTED PROMOTIONAL POST</small>
+                {copied && <span style={{ color: '#2b7858', fontSize: '12px', fontWeight: 700 }}>✓ Copied to clipboard!</span>}
+              </div>
               <pre>{result.shareIntents?.formattedText}</pre>
-              <button type="button" onClick={copyPost} className="button button-outline small-button">
-                {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied to Clipboard!' : 'Copy Formatted Text'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button type="button" onClick={copyPost} className="button button-outline small-button">
+                  {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied to Clipboard!' : 'Copy Formatted Text'}
+                </button>
+                {typeof navigator !== 'undefined' && (navigator as any).share && (
+                  <button type="button" onClick={triggerNativeShare} className="button button-primary small-button" style={{ background: '#1c634c' }}>
+                    <Share2 size={14} /> Share via Phone Apps
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="section-kicker" style={{ marginTop: '16px' }}>1-CLICK DIRECT SOCIAL SHARING</div>
+            <div className="section-kicker" style={{ marginTop: '18px' }}>1-CLICK DIRECT SOCIAL SHARING</div>
             <div className="dist-intents-grid">
               <a href={result.shareIntents?.whatsapp} target="_blank" rel="noreferrer" className="intent-card-btn intent-wa">
                 <MessageSquareText size={18} /> Post to WhatsApp Groups & Status
               </a>
               <a href={result.shareIntents?.facebook} target="_blank" rel="noreferrer" className="intent-card-btn intent-fb">
                 <Globe size={18} /> Post to Facebook Groups
+              </a>
+              <a href={result.shareIntents?.telegram} target="_blank" rel="noreferrer" className="intent-card-btn" style={{ background: '#229ed9' }}>
+                <Send size={18} /> Share on Telegram Channels
               </a>
               <a href={result.shareIntents?.linkedin} target="_blank" rel="noreferrer" className="intent-card-btn intent-li">
                 <Link2 size={18} /> Share on LinkedIn
@@ -511,7 +571,33 @@ function SocialPublishModal({
               </a>
             </div>
 
-            <button type="button" className="button button-primary" style={{ width: '100%', marginTop: '14px' }} onClick={onClose}>
+            {selectedCommunitiesList.length > 0 && (
+              <div style={{ marginTop: '18px' }}>
+                <div className="section-kicker" style={{ marginBottom: '8px' }}>YOUR SELECTED GROUPS & CHANNELS ({selectedCommunitiesList.length})</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                  {selectedCommunitiesList.map((comm) => (
+                    <div key={comm.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', background: '#f5f7f2', border: '1px solid #dce4d6' }}>
+                      <div>
+                        <b style={{ fontSize: '13px', color: '#1e4033', display: 'block' }}>{comm.name}</b>
+                        <small style={{ color: '#6d7f75', fontSize: '11px' }}>{comm.platform.toUpperCase()} · {comm.members}</small>
+                      </div>
+                      <a
+                        href={comm.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="button button-outline small-button"
+                        style={{ padding: '4px 10px', fontSize: '12px', minHeight: '32px' }}
+                        onClick={() => copyPost()}
+                      >
+                        Open Group & Paste <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button type="button" className="button button-primary" style={{ width: '100%', marginTop: '18px', minHeight: '48px', fontSize: '15px' }} onClick={onClose}>
               Done / Return to Dashboard
             </button>
           </div>
@@ -954,8 +1040,24 @@ function AccountDashboardPage() {
                 <tr key={ad.id} data-testid={`row-ad-${ad.id}`}>
                   <td>
                     <div className="table-ad-title">
-                      {ad.imagePath ? <img src={`/api/storage${ad.imagePath}`} alt="" /> : <div className="table-thumb"><FileImage size={16} /></div>}
-                      <span><b>{ad.title}</b><small>{ad.description.slice(0, 50)}{ad.description.length > 50 ? '…' : ''}</small></span>
+                      {ad.imagePath && isVideoMedia(ad.imagePath, (ad as any).videoUrl) ? (
+                        <div className="table-thumb" style={{ background: '#fbf0dc', color: '#9d671c' }} title="Video Ad">
+                          <Film size={18} />
+                        </div>
+                      ) : ad.imagePath ? (
+                        <img src={getMediaSource(ad.imagePath) || ''} alt="" />
+                      ) : (
+                        <div className="table-thumb"><FileImage size={16} /></div>
+                      )}
+                      <span>
+                        <b>{ad.title}</b>
+                        <small>{ad.description.slice(0, 50)}{ad.description.length > 50 ? '…' : ''}</small>
+                        {((ad as any).videoUrl || isVideoMedia(ad.imagePath)) && (
+                          <small style={{ color: '#9d671c', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Film size={10} /> Video Attached
+                          </small>
+                        )}
+                      </span>
                     </div>
                   </td>
                   <td>{dateLabel(ad.createdAt)}</td>
@@ -987,6 +1089,13 @@ function AccountDashboardPage() {
                   <b>{ad.title}</b>
                   <StatusPill status={ad.status} />
                 </div>
+                {((ad as any).videoUrl || isVideoMedia(ad.imagePath)) && (
+                  <div style={{ margin: '4px 0' }}>
+                    <span className="comm-platform-tag" style={{ background: '#fdf3e2', color: '#97641d', padding: '2px 8px', borderRadius: '4px' }}>
+                      <Film size={11} /> Video Ad
+                    </span>
+                  </div>
+                )}
                 <p>{dateLabel(ad.createdAt)} · {ad.planId} plan</p>
                 {ad.adminNote && <small>{ad.adminNote}</small>}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
@@ -1022,6 +1131,8 @@ function SubmissionPage() {
   const [adUserName, setAdUserName] = useState('');
   const [description, setDescription] = useState('');
   const [link, setLink] = useState('');
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [videoUrl, setVideoUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
   const [error, setError] = useState('');
@@ -1076,21 +1187,24 @@ function SubmissionPage() {
     if (!data || !canSubmit || formBusy) return;
     setError(''); setSuccess('');
     try {
-      let imagePath: string | null = preview || null;
+      let mediaPath: string | null = preview || null;
       if (file) {
         setUploading(true);
         try {
           const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } });
           const response = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
           if (response.ok) {
-            imagePath = upload.objectPath;
+            mediaPath = upload.objectPath;
           }
         } catch {
-          // If standalone/GitHub Pages, use preview DataURL so image works
-          imagePath = preview;
+          // If standalone/GitHub Pages, use preview DataURL so media works
+          mediaPath = preview;
         }
         setUploading(false);
       }
+
+      const finalVideoUrl = mediaType === 'video' ? (videoUrl.trim() || mediaPath || undefined) : undefined;
+      const finalImagePath = mediaType === 'image' ? mediaPath : (preview || null);
 
       try {
         await createAd.mutateAsync({
@@ -1099,7 +1213,7 @@ function SubmissionPage() {
             title: title.trim(),
             description: description.trim(),
             link: link.trim(),
-            imagePath,
+            imagePath: mediaPath,
             shareToAdReachChannels: true,
             socialAccountIds: selectedGroupIds,
           },
@@ -1108,16 +1222,18 @@ function SubmissionPage() {
         console.warn('Backend API notice:', backendErr);
       }
 
-      const newAdRecord: Ad = {
+      const newAdRecord: any = {
         id: `ad-${Date.now()}`,
         userId: user?.id || data.user.userId,
         userName: adUserName.trim() || data.user.name,
         title: title.trim(),
         description: description.trim(),
         link: link.trim(),
-        imagePath,
+        imagePath: mediaPath,
+        videoUrl: finalVideoUrl,
+        mediaType,
         status: 'active',
-        adminNote: 'Broadcast ready for Zambian groups',
+        adminNote: mediaType === 'video' ? 'Video ad ready for social broadcast' : 'Broadcast ready for Zambian groups',
         planId: 'Free Starter (10 free ads)',
         shareToAdReachChannels: true,
         socialAccountIds: selectedGroupIds,
@@ -1134,7 +1250,9 @@ function SubmissionPage() {
         selectedCommunities: selectedGroupIds,
         userId: user?.id || data.user.userId,
         userEmail: data.user.email,
-        imageUrl: imagePath,
+        imageUrl: finalImagePath || undefined,
+        videoUrl: finalVideoUrl,
+        mediaType,
       });
 
       // Save locally to localStorage so user sees it instantly on dashboard
@@ -1146,7 +1264,7 @@ function SubmissionPage() {
       } catch {}
 
       queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
-      setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview('');
+      setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview(''); setVideoUrl('');
       setSuccess('Your ad is live! It has been submitted and queued for social broadcast across your selected groups.');
     } catch (err: any) {
       setUploading(false);
@@ -1157,8 +1275,13 @@ function SubmissionPage() {
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0];
     if (!selected) return;
-    if (!selected.type.startsWith('image/')) { setError('Choose an image file to continue.'); return; }
-    if (selected.size > 8 * 1024 * 1024) { setError('Your image must be smaller than 8 MB.'); return; }
+    if (mediaType === 'image') {
+      if (!selected.type.startsWith('image/')) { setError('Choose an image file (JPG, PNG, WEBP).'); return; }
+      if (selected.size > 8 * 1024 * 1024) { setError('Your image must be smaller than 8 MB.'); return; }
+    } else {
+      if (!selected.type.startsWith('video/')) { setError('Choose a video file (MP4, WebM, MOV).'); return; }
+      if (selected.size > 50 * 1024 * 1024) { setError('Your video must be smaller than 50 MB.'); return; }
+    }
     setError('');
     if (preview) URL.revokeObjectURL(preview);
     setFile(selected); setPreview(URL.createObjectURL(selected));
@@ -1242,12 +1365,84 @@ function SubmissionPage() {
           <label className="field-label" htmlFor="ad-link">Where can people find you? <span>Required</span></label>
           <div className="input-with-icon"><Link2 size={16} /><input id="ad-link" type="url" value={link} onChange={(e) => setLink(e.target.value)} required placeholder="https://yourwebsite.com or a social profile" data-testid="input-ad-link" /></div>
 
-          <label className="field-label">Add an image <span>Optional</span></label>
-          <label className={`upload-box ${preview ? 'has-preview' : ''}`} htmlFor="ad-image">
-            {preview ? <><img src={preview} alt="Selected ad image preview" /><span className="upload-change"><ImagePlus size={16} /> Change image</span></> : <><span className="upload-icon"><ImagePlus size={18} /></span><b>Choose an image</b><span>JPG, PNG or WEBP · max 8 MB</span></>}
-            <input id="ad-image" type="file" accept="image/*" onChange={onFileChange} data-testid="input-ad-image" />
-          </label>
-          {file && <button type="button" className="remove-file" onClick={() => { setFile(null); setPreview(''); }}>Remove image <X size={13} /></button>}
+          <label className="field-label">Add media (Image or Video) <span>Optional</span></label>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            <button
+              type="button"
+              className={`filter-chip ${mediaType === 'image' ? 'active' : ''}`}
+              onClick={() => { setMediaType('image'); if (file?.type.startsWith('video/')) { setFile(null); setPreview(''); } }}
+            >
+              <ImagePlus size={14} /> Image Photo
+            </button>
+            <button
+              type="button"
+              className={`filter-chip ${mediaType === 'video' ? 'active' : ''}`}
+              onClick={() => { setMediaType('video'); if (file?.type.startsWith('image/')) { setFile(null); setPreview(''); } }}
+            >
+              <Film size={14} /> Video (Upload or Link)
+            </button>
+          </div>
+
+          {mediaType === 'image' ? (
+            <>
+              <label className={`upload-box ${preview ? 'has-preview' : ''}`} htmlFor="ad-media-image">
+                {preview ? (
+                  <>
+                    <img src={preview} alt="Selected ad preview" />
+                    <span className="upload-change"><ImagePlus size={16} /> Change photo</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="upload-icon"><ImagePlus size={18} /></span>
+                    <b>Choose a photo or graphic</b>
+                    <span>JPG, PNG or WEBP · max 8 MB</span>
+                  </>
+                )}
+                <input id="ad-media-image" type="file" accept="image/*" onChange={onFileChange} data-testid="input-ad-image" />
+              </label>
+              {file && <button type="button" className="remove-file" onClick={() => { setFile(null); setPreview(''); }}>Remove photo <X size={13} /></button>}
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label className={`upload-box ${preview ? 'has-preview' : ''}`} htmlFor="ad-media-video">
+                {preview ? (
+                  <div style={{ width: '100%', padding: '8px' }}>
+                    <video src={preview} controls style={{ width: '100%', maxHeight: '200px', borderRadius: '8px' }} />
+                    <span className="upload-change" style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}><Film size={16} /> Change video clip</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="upload-icon" style={{ background: '#f8eedc', color: '#a36d22' }}><Film size={18} /></span>
+                    <b>Upload a promo video clip</b>
+                    <span>MP4, WebM, or MOV · max 50 MB</span>
+                  </>
+                )}
+                <input id="ad-media-video" type="file" accept="video/*" onChange={onFileChange} data-testid="input-ad-video" />
+              </label>
+              {file && <button type="button" className="remove-file" onClick={() => { setFile(null); setPreview(''); }}>Remove video file <X size={13} /></button>}
+
+              <div>
+                <label className="field-label" htmlFor="video-url" style={{ marginTop: '2px' }}>
+                  Or enter video link <span>YouTube, TikTok, Facebook Video, Instagram Reel</span>
+                </label>
+                <div className="input-with-icon">
+                  <Film size={16} />
+                  <input
+                    id="video-url"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... or TikTok / Facebook video URL"
+                  />
+                </div>
+                {videoUrl && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '13px', color: '#25654f' }}>
+                    <Check size={14} /> Video link attached: {videoUrl.slice(0, 48)}...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="social-dist-panel">
             <div className="social-dist-header">
@@ -1515,9 +1710,15 @@ function AdminPage() {
             <article className="review-card" key={ad.id} data-testid={`review-ad-${ad.id}`}>
               <div className="review-card-top">
                 <div className="review-ad-identity">
-                  {ad.imagePath ? <img src={`/api/storage${ad.imagePath}`} alt="" /> : <span className="review-thumb"><FileImage size={17} /></span>}
+                  {ad.imagePath && isVideoMedia(ad.imagePath, (ad as any).videoUrl) ? (
+                    <span className="review-thumb" style={{ background: '#f8eedc', color: '#a36d22' }}><Film size={18} /></span>
+                  ) : ad.imagePath ? (
+                    <img src={getMediaSource(ad.imagePath) || ''} alt="" />
+                  ) : (
+                    <span className="review-thumb"><FileImage size={17} /></span>
+                  )}
                   <div>
-                    <span className="review-tier">{ad.userTier} plan</span>
+                    <span className="review-tier">{ad.userTier} plan {((ad as any).videoUrl || isVideoMedia(ad.imagePath)) ? '· 🎬 Video' : ''}</span>
                     <h3>{ad.title}</h3>
                     <p>{ad.userName} · {ad.email}</p>
                   </div>
@@ -1528,7 +1729,11 @@ function AdminPage() {
               <a className="review-destination" href={ad.link} target="_blank" rel="noreferrer"><ExternalLink size={14} /> {ad.link}</a>
               <div className="review-meta">
                 <span>Submitted {dateLabel(ad.createdAt)}</span>
-                {ad.imagePath && <a href={`/api/storage${ad.imagePath}`} target="_blank" rel="noreferrer">View image <ArrowUpRight size={12} /></a>}
+                {ad.imagePath && (
+                  <a href={getMediaSource(ad.imagePath) || '#'} target="_blank" rel="noreferrer">
+                    {isVideoMedia(ad.imagePath, (ad as any).videoUrl) ? 'Watch video' : 'View image'} <ArrowUpRight size={12} />
+                  </a>
+                )}
               </div>
               {ad.status === 'pending' && (
                 <>
