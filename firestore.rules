@@ -1,5 +1,36 @@
 rules_version = '2';
 
+// ===============================================================
+// AdReach Zambia - Hardened Production Security Rules
+// ===============================================================
+//
+// Collection: /ads/{adId}
+//   - headline: string (1 - 300 chars)
+//   - copy: string (1 - 5000 chars)
+//   - targetUrl: optional string (<= 1000 chars)
+//   - category: optional string (<= 100 chars)
+//   - status: string in ['active', 'pending', 'rejected', 'archived']
+//   - selectedCommunities: optional list (<= 100 items)
+//   - userId: string (matches request.auth.uid, immutable)
+//   - userEmail: optional string (<= 200 chars)
+//   - imageUrl: optional string (<= 1000 chars)
+//   - videoUrl: optional string (<= 1000 chars)
+//   - mediaType: optional string in ['image', 'video']
+//   - createdAt: server timestamp or request timestamp
+//
+// Collection: /communities/{communityId}
+//   - Curated community directory: public read, admin-only write
+//
+// Collection: /distribution_events/{eventId}
+//   - Event log per broadcast: public read, authenticated create, admin update/delete
+//
+// Collection: /users/{userId}
+//   - User account profile: owner read/write, admin manage
+//
+// Collection: /payments/{paymentId}
+//   - Payment verification requests: owner create/read, admin review/update/delete
+// ===============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -11,40 +42,88 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Ads collection: anyone can read approved public ads; authenticated users can submit
-    match /ads/{adId} {
-      allow read: if true;
-      allow create: if request.resource.data.headline is string
-                    && request.resource.data.copy is string
-                    && request.resource.data.headline.size() > 0
-                    && request.resource.data.headline.size() <= 300
-                    && request.resource.data.copy.size() <= 5000;
-      allow update, delete: if isSignedIn();
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        (request.auth.token.email != null &&
+          request.auth.token.email.lower() in ['luyandokandisha@gmail.com', 'admin@adreach.zm'])
+      );
     }
 
-    // Communities & directory: public read
+    function isValidAdFields(data) {
+      return data.headline is string &&
+             data.headline.size() > 0 &&
+             data.headline.size() <= 300 &&
+             data.copy is string &&
+             data.copy.size() > 0 &&
+             data.copy.size() <= 5000 &&
+             data.userId is string &&
+             (!('targetUrl' in data) || (data.targetUrl is string && data.targetUrl.size() <= 1000)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 200)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1000)) &&
+             (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 1000)) &&
+             (!('mediaType' in data) || data.mediaType in ['image', 'video']);
+    }
+
+    // Ads collection: public read for approved/active; owner/admin read all; authenticated creation
+    match /ads/{adId} {
+      allow read: if (resource.data.status in ['active', 'approved']) ||
+                     (isSignedIn() && resource.data.userId == request.auth.uid) ||
+                     isAdmin();
+
+      allow create: if isSignedIn() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.status in ['active', 'pending'] &&
+                       isValidAdFields(request.resource.data);
+
+      allow update: if (
+                        // Owner can update copy/details but cannot grant themselves admin approval
+                        (isOwner(resource.data.userId) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         isValidAdFields(request.resource.data) &&
+                         (request.resource.data.status == resource.data.status || request.resource.data.status in ['active', 'pending']))
+                      ) || isAdmin();
+
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+    }
+
+    // Communities directory: public can read, only admin can manage
     match /communities/{communityId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Distribution events: logged per ad broadcast
     match /distribution_events/{eventId} {
       allow read: if true;
-      allow create: if isSignedIn() || request.resource.data.adId is string;
-      allow update, delete: if isSignedIn();
+      allow create: if isSignedIn() &&
+                       request.resource.data.adId is string &&
+                       request.resource.data.adId.size() <= 100;
+      allow update, delete: if isAdmin();
     }
 
-    // User accounts / profiles
+    // User profiles: owner only or admin
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isOwner(userId) || isAdmin();
     }
 
-    // Payment verification records: write restricted
+    // Payment verification records: owner create & read, admin review
     match /payments/{paymentId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn();
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+
+      allow create: if isSignedIn() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.planId in ['weekly', 'monthly'] &&
+                       request.resource.data.amountK is number &&
+                       request.resource.data.amountK > 0;
+
+      allow update, delete: if isAdmin();
+    }
+
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

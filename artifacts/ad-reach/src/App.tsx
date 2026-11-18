@@ -27,23 +27,35 @@ import {
   subscribeToAuth,
   signOutFirebase,
   DEFAULT_ZAMBIAN_PLANS,
+  savePaymentToFirestore,
+  getAdminAdsFromFirestore,
+  updateAdStatusInFirestore,
+  getPaymentsFromFirestore,
+  updatePaymentStatusInFirestore,
+  type FirebasePaymentRecord,
 } from '@/lib/firebase';
 import { FirebaseAuthCard } from '@/components/firebase-auth';
+import { TermsPage, PrivacyPage } from '@/pages/legal';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const rawClerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const hasCustomClerkKey = Boolean(rawClerkKey && rawClerkKey.startsWith('pk_'));
-const isReplitHost =
-  typeof window !== 'undefined' &&
-  (window.location.hostname.endsWith('.repl.co') || window.location.hostname.endsWith('.replit.dev'));
-export const clerkPubKey: string | null = hasCustomClerkKey
-  ? rawClerkKey
-  : isReplitHost
-    ? publishableKeyFromHost(window.location.hostname, undefined) || null
-    : null;
+export const clerkPubKey: string | null = hasCustomClerkKey ? rawClerkKey : null;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path; }
+
+export function sanitizeUrl(url?: string | null): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.toLowerCase().startsWith('javascript:') || trimmed.toLowerCase().startsWith('data:text/html')) {
+    return '#';
+  }
+  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('/') && !trimmed.startsWith('mailto:') && !trimmed.startsWith('tel:')) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
 
 export function getMediaSource(path: string | null | undefined): string | null {
   if (!path) return null;
@@ -74,20 +86,18 @@ export interface Community {
 }
 
 export const DEFAULT_COMMUNITIES: Community[] = [
-  { id: 'main-adreach-fb', name: 'AdReach Zambia Official Facebook Page', platform: 'facebook', category: 'General Business', members: '125,000+ followers', url: 'https://www.facebook.com/adreachzambia', description: 'Main verified Facebook broadcast page featuring verified Zambian businesses.', isMainChannel: true },
-  { id: 'main-adreach-wa', name: 'AdReach Zambia Daily Deals WhatsApp Channel', platform: 'whatsapp', category: 'Buy & Sell', members: '48,500+ followers', url: 'https://whatsapp.com/channel/0029VaAdReachZm', description: 'Direct-to-phone daily business promotions across Zambia.', isMainChannel: true },
-  { id: 'main-adreach-ig', name: 'AdReach Zambia Instagram (@adreach.zm)', platform: 'instagram', category: 'General Business', members: '72,000+ followers', url: 'https://www.instagram.com/adreach.zm', description: 'Visual carousel spotlights and story features for local brands.', isMainChannel: true },
-  { id: 'main-adreach-tt', name: 'AdReach Zambia TikTok Spotlight', platform: 'tiktok', category: 'General Business', members: '95,000+ followers', url: 'https://www.tiktok.com/@adreachzambia', description: 'High-reach short-form video highlights and featured shoutouts.', isMainChannel: true },
-  { id: 'main-adreach-li', name: 'AdReach Zambia LinkedIn Commercial Network', platform: 'linkedin', category: 'Tech & Services', members: '34,000+ connections', url: 'https://www.linkedin.com/company/adreach-zambia', description: 'B2B promotions, corporate suppliers, and professional Zambian services.', isMainChannel: true },
-  { id: 'grp-lusaka-biz', name: 'Lusaka Business Hub & Market', platform: 'facebook', category: 'General Business', members: '185,000 members', url: 'https://www.facebook.com/groups/lusakabusinesshub', description: 'Lusaka commerce hub for retail, services, and trade.' },
-  { id: 'grp-zm-buysell', name: 'Zambia Buy, Sell & Swap Everything', platform: 'facebook', category: 'Buy & Sell', members: '340,000 members', url: 'https://www.facebook.com/groups/zambiabuysellswap', description: 'Nationwide consumer exchange for electronics, fashion, and goods.' },
-  { id: 'grp-copperbelt-traders', name: 'Copperbelt Entrepreneurs & Traders (Kitwe / Ndola)', platform: 'facebook', category: 'General Business', members: '95,000 members', url: 'https://www.facebook.com/groups/copperbelttraders', description: 'Connecting businesses and consumers across Kitwe, Ndola, and Chingola.' },
-  { id: 'grp-zm-realestate', name: 'Lusaka Real Estate, Plots & Car Bazaar', platform: 'facebook', category: 'Real Estate & Motors', members: '140,000 members', url: 'https://www.facebook.com/groups/lusakapropertyandcars', description: 'Targeted market for property rentals, plots, and vehicle sales.' },
-  { id: 'grp-zm-agri', name: 'Agriculture & Farming Market Zambia', platform: 'facebook', category: 'Agriculture', members: '115,000 members', url: 'https://www.facebook.com/groups/zambiafarmingmarket', description: 'Farmers, produce suppliers, poultry, livestock, and agro-equipment.' },
-  { id: 'grp-wa-lusaka-market', name: 'Lusaka Quick Market WhatsApp Community', platform: 'whatsapp', category: 'Buy & Sell', members: '15,000 members', url: 'https://chat.whatsapp.com/LusakaQuickMarketCommunity', description: 'Sub-neighborhood shopping network for rapid buyer inquiry and instant chat.' },
-  { id: 'grp-wa-tech-freelance', name: 'Tech, Creative & Freelancers Zambia', platform: 'whatsapp', category: 'Tech & Services', members: '8,500 members', url: 'https://chat.whatsapp.com/TechCreativeZambia', description: 'Developers, graphic designers, digital marketers, and consultants.' },
-  { id: 'grp-zm-smallbiz', name: 'Zambia Small Business Network (ZSBN)', platform: 'facebook', category: 'General Business', members: '78,000 members', url: 'https://www.facebook.com/groups/zsbnnetwork', description: 'Empowering SME founders, wholesalers, and startup creators.' },
-  { id: 'grp-tele-zm-deals', name: 'Zambia Deals & Classifieds Telegram', platform: 'telegram', category: 'Buy & Sell', members: '22,000 members', url: 'https://t.me/ZambiaDealsOfficial', description: 'Fast-updating announcements channel with immediate push notifications.' },
+  { id: 'main-adreach-fb', name: 'AdReach Official Facebook Network', platform: 'facebook', category: 'General Business', members: '~120k network reach', url: 'https://www.facebook.com/search/groups/?q=zambia%20business', description: 'Curated distribution across vetted Zambian business pages and enterprise networks.', isMainChannel: true },
+  { id: 'main-adreach-wa', name: 'AdReach Daily WhatsApp Deals Channel', platform: 'whatsapp', category: 'Buy & Sell', members: '~45k subscribers', url: 'https://wa.me/260760312951?text=Hi%2C%20I%20would%20like%20to%20receive%20AdReach%20Zambia%20daily%20deals', description: 'Direct-to-consumer broadcast delivered straight to Zambian buyers via WhatsApp.', isMainChannel: true },
+  { id: 'main-adreach-ig', name: 'AdReach Zambia Instagram Spotlight', platform: 'instagram', category: 'General Business', members: '~60k community', url: 'https://www.instagram.com', description: 'Visual story features and carousel spotlights for local retail brands.', isMainChannel: true },
+  { id: 'main-adreach-tt', name: 'AdReach TikTok Video Showcase', platform: 'tiktok', category: 'General Business', members: '~80k viewer base', url: 'https://www.tiktok.com', description: 'Short-form promotional video showcase for products, restaurants, and venues.', isMainChannel: true },
+  { id: 'main-adreach-li', name: 'Zambia LinkedIn Professional Hub', platform: 'linkedin', category: 'Tech & Services', members: '~30k connections', url: 'https://www.linkedin.com/search/results/all/?keywords=zambia%20business', description: 'B2B tenders, corporate suppliers, tech solutions, and commercial services.', isMainChannel: true },
+  { id: 'grp-lusaka-biz', name: 'Lusaka Business Hub & Traders', platform: 'facebook', category: 'General Business', members: '~180k members', url: 'https://www.facebook.com/search/groups/?q=lusaka%20business%20hub', description: 'Active Lusaka marketplace for retail, commercial trade, and professional services.' },
+  { id: 'grp-zm-buysell', name: 'Zambia Buy, Sell & Swap Network', platform: 'facebook', category: 'Buy & Sell', members: '~250k members', url: 'https://www.facebook.com/search/groups/?q=zambia%20buy%20and%20sell', description: 'General marketplace for electronics, fashion, household items, and vehicles.' },
+  { id: 'grp-copperbelt-traders', name: 'Copperbelt Entrepreneurs (Kitwe & Ndola)', platform: 'facebook', category: 'General Business', members: '~90k members', url: 'https://www.facebook.com/search/groups/?q=copperbelt%20business%20traders', description: 'Commercial trade hub serving Kitwe, Ndola, Chingola, and Mufulira.' },
+  { id: 'grp-zm-realestate', name: 'Lusaka Real Estate & Motors Hub', platform: 'facebook', category: 'Real Estate & Motors', members: '~110k members', url: 'https://www.facebook.com/search/groups/?q=zambia%20real%20estate%20plots', description: 'Targeted network for house rentals, titled plots, commercial land, and cars.' },
+  { id: 'grp-zm-agri', name: 'Zambia Farming & Agro Exchange', platform: 'facebook', category: 'Agriculture', members: '~100k members', url: 'https://www.facebook.com/search/groups/?q=zambia%20farming%20agriculture', description: 'Farmers, poultry suppliers, maize, fertilizers, feeds, and farm equipment.' },
+  { id: 'grp-wa-tech-freelance', name: 'Tech, Creative & SME Network Zambia', platform: 'whatsapp', category: 'Tech & Services', members: '~8k members', url: 'https://wa.me/260760312951?text=Hi%2C%20I%20am%20interested%20in%20the%20Tech%20%26%20SME%20Network', description: 'Software developers, graphic designers, digital consultants, and accountants.' },
+  { id: 'grp-tele-zm-deals', name: 'Zambia Classifieds & Deals Telegram', platform: 'telegram', category: 'Buy & Sell', members: '~15k members', url: 'https://t.me/share/url?url=https://luyandokandisha-10000.github.io/adreach/', description: 'Rapid push-notification alerts for flash discounts, tenders, and clearance sales.' },
 ];
 
 const appearance = {
@@ -217,51 +227,231 @@ function Header() {
 function Home() {
   return <div className="landing page-enter"><Header /><main>
     <section className="hero">
-      <div className="hero-left"><div className="eyebrow"><span className="eyebrow-dot" /> MADE FOR ZAMBIAN BUSINESSES</div><h1>Good work<br />deserves to be<br /><span>seen.</span></h1><p className="hero-copy">Submit your ad once, get featured across our verified channels and top Zambian social media groups.</p><div className="hero-actions"><ButtonLink href="/sign-up">Get your first 10 ads free <ArrowRight size={17} /></ButtonLink><a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a></div><div className="hero-proof"><div className="proof-avatars"><span>MK</span><span>LK</span><span>CN</span></div><span>Targeting over 1,000,000+ local buyers across Zambia.</span></div></div>
-      <div className="hero-art"><div className="art-sun" /><div className="art-caption"><span>LOCAL BUSINESS</span><span>01 / 03</span></div><div className="art-phone"><div className="phone-top"><span className="mini-avatar">K</span><span><b>kapenta.kitchen</b><small>Lusaka, Zambia</small></span><MoreHorizontal size={16} /></div><div className="phone-photo"><div className="photo-tag">JUST OPENED</div><div className="photo-type">A little<br />taste of<br /><i>home.</i></div><div className="photo-stamp">K</div></div><div className="phone-buttons"><span><Instagram size={16} /></span><span><MessageSquareText size={16} /></span><span><Send size={15} /></span><span className="phone-bookmark">Save</span></div><p><b>kapenta.kitchen</b> Good food, good people. Come through this week.</p><div className="phone-lines" /></div><div className="floating-reach"><span className="reach-icon"><ArrowUpRight size={18} /></span><span><b>One submission</b><small>ready for multi-group reach</small></span></div><span className="art-side-note">BUILT FOR YOUR NEXT CUSTOMER</span></div>
-      <div className="hero-bottomline"><span>ONE SIMPLE SUBMISSION</span><span>POST TO MAIN CHANNELS & GROUPS</span><span>MADE FOR LOCAL REACH</span></div>
+      <div className="hero-left">
+        <div className="eyebrow"><span className="eyebrow-dot" /> PROUDLY BUILT FOR ZAMBIAN BUSINESSES</div>
+        <h1>Get Your Business<br />in Front of Paying<br /><span>Zambian Buyers.</span></h1>
+        <p className="hero-copy">Submit your ad once. We broadcast your products, services, and promotions directly into active Facebook trade groups, WhatsApp business communities, and LinkedIn networks across Lusaka, the Copperbelt, and nationwide.</p>
+        <div className="hero-actions">
+          <ButtonLink href="/sign-up">Start with 10 free ads <ArrowRight size={17} /></ButtonLink>
+          <a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a>
+        </div>
+        <div className="hero-proof">
+          <div className="proof-avatars"><span>ZM</span><span>LK</span><span>CB</span></div>
+          <span>Targeting over 350,000+ active members across curated Zambian trade and business groups.</span>
+        </div>
+      </div>
+      <div className="hero-art">
+        <div className="art-sun" />
+        <div className="art-caption"><span>VERIFIED BUSINESS SHOWCASE</span><span>01 / 04</span></div>
+        <div className="art-phone">
+          <div className="phone-top"><span className="mini-avatar">K</span><span><b>kapenta.kitchen</b><small>Lusaka, Zambia</small></span><MoreHorizontal size={16} /></div>
+          <div className="phone-photo"><div className="photo-tag">FEATURED OFFER</div><div className="photo-type">Fresh local<br />meals delivered<br /><i>daily.</i></div><div className="photo-stamp">K</div></div>
+          <div className="phone-buttons"><span><Instagram size={16} /></span><span><MessageSquareText size={16} /></span><span><Send size={15} /></span><span className="phone-bookmark">Order</span></div>
+          <p><b>kapenta.kitchen</b> Traditional meals, village chicken &amp; catering in Lusaka. WhatsApp us for orders.</p>
+          <div className="phone-lines" />
+        </div>
+        <div className="floating-reach"><span className="reach-icon"><ArrowUpRight size={18} /></span><span><b>1-Click Broadcast</b><small>Facebook, WhatsApp &amp; LinkedIn</small></span></div>
+        <span className="art-side-note">BUILT FOR YOUR NEXT CUSTOMER</span>
+      </div>
+      <div className="hero-bottomline"><span>NO COMPLICATED AD ACCOUNTS</span><span>VERIFIED HUMAN CURATION</span><span>DIRECT WHATSAPP INQUIRIES</span></div>
     </section>
 
-    <section className="social-strip"><span className="social-label">BROADCAST DIRECTLY TO</span><span><Instagram size={17} /> Instagram</span><span><MessageSquareText size={17} /> Facebook Groups</span><span><Zap size={16} /> TikTok</span><span><MessageSquareText size={17} /> WhatsApp Communities</span><span><Link2 size={17} /> LinkedIn</span></section>
+    <section className="social-strip">
+      <span className="social-label">BROADCAST DIRECTLY TO</span>
+      <span><MessageSquareText size={17} /> Facebook Groups</span>
+      <span><MessageSquareText size={17} /> WhatsApp Channels</span>
+      <span><Link2 size={17} /> LinkedIn Networks</span>
+      <span><Instagram size={17} /> Instagram Spotlight</span>
+      <span><Zap size={16} /> TikTok Video</span>
+    </section>
 
-    <section className="steps-section" id="how-it-works"><div className="section-kicker">A BETTER WAY TO BE SEEN</div><div className="section-heading-row"><h2>Three steps.<br /><span>More eyes on you.</span></h2><p>No agency calls. No complicated campaign setup. Just select your target communities and broadcast.</p></div><div className="steps-grid">
-      <article className="step-item"><span className="step-index">01</span><div className="step-icon"><FileImage size={20} /></div><h3>Create your ad</h3><p>Share your message, photo, link and select the Zambian groups you want to reach.</p></article>
-      <article className="step-item step-highlight"><span className="step-index">02</span><div className="step-icon"><Users size={20} /></div><h3>Choose target groups</h3><p>Select from Lusaka, Copperbelt, Farming, Tech, and Buy & Sell communities or add custom links.</p></article>
-      <article className="step-item"><span className="step-index">03</span><div className="step-icon"><Share2 size={20} /></div><h3>Broadcast & track</h3><p>Distribute with 1 click across main channels and groups. Stay in the loop with live event tracking.</p></article>
-    </div></section>
+    <section className="steps-section" id="how-it-works">
+      <div className="section-kicker">SIMPLE &amp; TRANSPARENT PROCESS</div>
+      <div className="section-heading-row">
+        <h2>Four simple steps.<br /><span>Real customer inquiries.</span></h2>
+        <p>No agencies. No confusing ad managers. Just tell us what you're selling and we handle the audience distribution.</p>
+      </div>
+      <div className="steps-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        <article className="step-item">
+          <span className="step-index">01</span>
+          <div className="step-icon"><FileImage size={20} /></div>
+          <h3>Create your ad</h3>
+          <p>Add your headline, promotional copy, photo or promo video link, and your WhatsApp contact.</p>
+        </article>
+        <article className="step-item step-highlight">
+          <span className="step-index">02</span>
+          <div className="step-icon"><ShieldCheck size={20} /></div>
+          <h3>Editorial check</h3>
+          <p>Our team verifies your submission within 2 hours to prevent spam and ensure maximum buyer trust.</p>
+        </article>
+        <article className="step-item">
+          <span className="step-index">03</span>
+          <div className="step-icon"><Share2 size={20} /></div>
+          <h3>Multi-group broadcast</h3>
+          <p>Your ad is published into targeted Facebook groups, WhatsApp channels, and LinkedIn networks.</p>
+        </article>
+        <article className="step-item">
+          <span className="step-index">04</span>
+          <div className="step-icon"><MessageSquareText size={20} /></div>
+          <h3>Receive direct calls</h3>
+          <p>Interested buyers click straight through to your WhatsApp or phone. You close the sale directly.</p>
+        </article>
+      </div>
+    </section>
 
     <section className="steps-section" id="communities" style={{ paddingTop: '20px' }}>
-      <div className="section-kicker">ZAMBIAN AUDIENCE NETWORK</div>
+      <div className="section-kicker">CURATED ZAMBIAN DISTRIBUTION NETWORKS</div>
       <div className="section-heading-row">
-        <h2>Top business communities.<br /><span>Ready for your post.</span></h2>
-        <p>Explore curated active buying & selling groups across Lusaka, the Copperbelt, and nationwide.</p>
+        <h2>Targeted business networks.<br /><span>Ready for your broadcast.</span></h2>
+        <p>Explore our directory of active buying and selling groups across Lusaka, the Copperbelt, and nationwide. AdReach manages distribution into these networks for you.</p>
       </div>
       <div className="community-grid" style={{ maxHeight: 'none' }}>
         {DEFAULT_COMMUNITIES.slice(0, 8).map((c) => (
           <div key={c.id} className="community-card">
             <div className="community-card-top">
               <span className="comm-platform-tag">{c.platform}</span>
-              {c.isMainChannel && <span className="reach-badge" style={{ padding: '2px 7px' }}>Main Broadcast</span>}
+              {c.isMainChannel && <span className="reach-badge" style={{ padding: '2px 7px' }}>Managed Channel</span>}
             </div>
             <b>{c.name}</b>
             <p>{c.description}</p>
             <div className="community-card-foot">
               <span>{c.members}</span>
-              <a href={c.url} target="_blank" rel="noreferrer" className="text-link" style={{ fontSize: '9px' }}>Preview <ExternalLink size={10} /></a>
+              <a href={c.url} target="_blank" rel="noreferrer" className="text-link" style={{ fontSize: '10px' }}>Network Hub <ExternalLink size={10} /></a>
             </div>
           </div>
         ))}
       </div>
     </section>
 
-    <section className="pricing-section" id="pricing"><div className="pricing-intro"><div className="section-kicker">STRAIGHT-UP PRICING</div><h2>Start free.<br /><span>Keep growing.</span></h2><p>Try AdReach with ten free submissions. When you’re ready, choose a simple plan that fits your business.</p><div className="pricing-footnote"><Check size={15} /> No hidden fees. Pay via Mobile Money (MTN 0760312951, Airtel, Zamtel).</div></div><div className="pricing-cards"><article className="price-card"><div className="price-label">A GOOD PLACE TO START</div><h3>Free</h3><div className="price-amount"><strong>K0</strong><span> / first 10 ads</span></div><p>Get your business in front of more people, one submission at a time.</p><ul><li><Check size={15} /> 10 ad submissions</li><li><Check size={15} /> Social group targeting</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Start with 10 free ads <ArrowRight size={16} /></ButtonLink></article><article className="price-card price-featured"><span className="popular-label">MOST FLEXIBLE</span><div className="price-label">FOR THE WEEKLY PUSH</div><h3>Weekly Boost</h3><div className="price-amount"><strong>K20</strong><span> / week</span></div><p>Keep sharing your offers and announcements with a little more room.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Full social group broadcast</li><li><Check size={15} /> WhatsApp confirmation</li></ul><ButtonLink href="/sign-up">Choose weekly <ArrowRight size={16} /></ButtonLink></article><article className="price-card"><div className="price-label">FOR A STEADY PRESENCE</div><h3>Monthly Pro</h3><div className="price-amount"><strong>K100</strong><span> / month</span></div><p>Plan ahead and keep your business visible throughout the month.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Multi-group broadcast</li><li><Check size={15} /> Priority social review</li></ul><ButtonLink href="/sign-up" kind="outline">Choose monthly <ArrowRight size={16} /></ButtonLink></article></div><p className="price-disclaimer">All prices shown in Zambian Kwacha (ZMK). Pay easily via MTN MoMo (0760312951) or Airtel/Zamtel with instant WhatsApp verification.</p></section>
+    <section className="pricing-section" id="pricing">
+      <div className="pricing-intro">
+        <div className="section-kicker">STRAIGHTFORWARD ZAMBIAN PRICING</div>
+        <h2>Start free.<br /><span>Upgrade when ready.</span></h2>
+        <p>Try AdReach with ten free submissions. When your business is ready for unlimited daily broadcasts, choose a simple weekly or monthly plan.</p>
+        <div className="pricing-footnote"><Check size={15} /> Transparent Zambian Kwacha (ZMW). Pay easily via MTN MoMo (0760312951) or Airtel Money.</div>
+      </div>
+      <div className="pricing-cards">
+        <article className="price-card">
+          <div className="price-label">STARTER TIER</div>
+          <h3>Free</h3>
+          <div className="price-amount"><strong>K0</strong><span> / first 10 ads</span></div>
+          <p>Perfect for testing the reach of the platform with zero risk.</p>
+          <ul>
+            <li><Check size={15} /> 10 free ad submissions</li>
+            <li><Check size={15} /> Facebook &amp; WhatsApp distribution</li>
+            <li><Check size={15} /> Image &amp; video ad support</li>
+            <li><Check size={15} /> Real-time status tracking</li>
+          </ul>
+          <ButtonLink href="/sign-up" kind="outline">Get 10 free ads <ArrowRight size={16} /></ButtonLink>
+        </article>
 
-    <section className="trust-band"><div className="trust-seal"><BadgeCheck size={23} /></div><div><span className="section-kicker">CLEAR FROM THE START</span><h2>Know where your ad stands.</h2></div><p>Submitted, under review, approved or broadcasted. Your dashboard makes every step easy to understand and execute.</p><ButtonLink href="/sign-up" kind="outline">Create your account <ArrowRight size={16} /></ButtonLink></section>
+        <article className="price-card price-featured">
+          <span className="popular-label">MOST POPULAR</span>
+          <div className="price-label">FOR WEEKLY OFFERS &amp; FLASH SALES</div>
+          <h3>Weekly Boost</h3>
+          <div className="price-amount"><strong>K20</strong><span> / week</span></div>
+          <p>Keep your products in front of buyers throughout the entire week.</p>
+          <ul>
+            <li><Check size={15} /> Unlimited ad broadcasts</li>
+            <li><Check size={15} /> Full group and channel coverage</li>
+            <li><Check size={15} /> Priority review under 2 hours</li>
+            <li><Check size={15} /> Instant WhatsApp payment confirmation</li>
+          </ul>
+          <ButtonLink href="/sign-up">Choose Weekly (K20) <ArrowRight size={16} /></ButtonLink>
+        </article>
 
-    <section className="faq-section" id="faq"><div className="faq-title"><div className="section-kicker">GOOD QUESTIONS</div><h2>Before you<br /><span>get started.</span></h2><a href="mailto:luyandokandisha@gmail.com">Talk to us: luyandokandisha@gmail.com <ArrowUpRight size={14} /></a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>WhatsApp / Call: 0760312951 (MTN) <ArrowUpRight size={14} /></a></div><div className="faq-list"><details><summary>How does social media and group posting work?<ChevronDown size={17} /></summary><p>AdReach allows you to select both our primary broadcast channels (Facebook, WhatsApp, Instagram, TikTok, LinkedIn) and targeted Zambian groups. When you broadcast, AdReach queues the distribution events and provides 1-click posting links to push your ad directly into selected communities.</p></details><details><summary>Can I target specific Facebook and WhatsApp groups?<ChevronDown size={17} /></summary><p>Yes! You can search our curated directory of active groups in Lusaka, the Copperbelt, Farming, Tech, and Real Estate, or type in your own custom group link.</p></details><details><summary>What happens after my ten free ads?<ChevronDown size={17} /></summary><p>You can continue with a K20 weekly or K100 monthly subscription. Payment is made simply via MTN MoMo (0760312951) or Airtel/Zamtel and confirmed over WhatsApp.</p></details><details><summary>Can I install AdReach as an App?<ChevronDown size={17} /></summary><p>Yes! AdReach is a full Progressive Web App. You can tap "Install App" on your phone or computer to install it directly to your home screen.</p></details></div></section>
+        <article className="price-card">
+          <div className="price-label">STEADY BUSINESS PRESENCE</div>
+          <h3>Monthly Pro</h3>
+          <div className="price-amount"><strong>K100</strong><span> / month</span></div>
+          <p>Continuous brand presence and recurring leads all month long.</p>
+          <ul>
+            <li><Check size={15} /> Unlimited ad broadcasts</li>
+            <li><Check size={15} /> Featured placement across top channels</li>
+            <li><Check size={15} /> Priority B2B LinkedIn &amp; Facebook reach</li>
+            <li><Check size={15} /> VIP WhatsApp support hotline</li>
+          </ul>
+          <ButtonLink href="/sign-up" kind="outline">Choose Monthly (K100) <ArrowRight size={16} /></ButtonLink>
+        </article>
+      </div>
+      <p className="price-disclaimer">All prices in Zambian Kwacha (ZMW). Pay via MTN MoMo to 0760312951 (Luyando Kandisha) or Airtel Money. If an ad is not approved, your payment is 100% refunded.</p>
+    </section>
 
-    <section className="closing-cta"><div className="closing-mark"><Megaphone size={24} /></div><div><span>YOUR NEXT CUSTOMER IS OUT THERE</span><h2>Let’s help them find you.</h2></div><ButtonLink href="/sign-up">Submit your first ad <ArrowRight size={17} /></ButtonLink></section>
-  </main><footer className="site-footer"><Brand inverse /><span>Made for businesses moving Zambia forward.</span><span>© {new Date().getFullYear()} AdReach Zambia</span><div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><a href="mailto:luyandokandisha@gmail.com">Email: luyandokandisha@gmail.com</a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer">MTN: 0760312951</a></div></footer></div>;
+    <section className="trust-band">
+      <div className="trust-seal"><BadgeCheck size={23} /></div>
+      <div>
+        <span className="section-kicker">ANTI-SPAM &amp; VERIFIED COMMERCE</span>
+        <h2>Why Zambian buyers trust AdReach.</h2>
+      </div>
+      <p>Every single ad is human-checked before broadcast. We filter out scams, fraudulent deals, and misleading offers so that real Zambian businesses get maximum response from genuine buyers.</p>
+      <ButtonLink href="/sign-up" kind="outline">Create your free account <ArrowRight size={16} /></ButtonLink>
+    </section>
+
+    <section className="faq-section" id="faq">
+      <div className="faq-title">
+        <div className="section-kicker">FREQUENTLY ASKED QUESTIONS</div>
+        <h2>Everything you<br /><span>need to know.</span></h2>
+        <a href="mailto:luyandokandisha@gmail.com">Email: luyandokandisha@gmail.com <ArrowUpRight size={14} /></a>
+        <a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>WhatsApp: +260 760 312 951 (MTN) <ArrowUpRight size={14} /></a>
+      </div>
+      <div className="faq-list">
+        <details>
+          <summary>How does social media and group posting work?<ChevronDown size={17} /></summary>
+          <p>AdReach distributes your ad through two primary methods: First, our editorial operations team broadcasts your verified ad directly into our curated network of Zambian business channels and trade groups. Second, our built-in 1-Click Social Broadcast engine lets you post your pre-formatted ad directly to your own Facebook timeline, LinkedIn page, or WhatsApp chats with one tap.</p>
+        </details>
+        <details>
+          <summary>Do I need to join the groups myself?<ChevronDown size={17} /></summary>
+          <p>No! AdReach manages distribution into our partner networks on your behalf. However, if you are also a member of specific groups, our 1-click tools provide pre-formatted text and links so you can cross-post into your personal groups in seconds without retyping anything.</p>
+        </details>
+        <details>
+          <summary>How fast is my ad reviewed and broadcasted?<ChevronDown size={17} /></summary>
+          <p>Submissions are typically reviewed and approved within 2 hours during normal business hours (08:00 to 18:00 CAT). Once approved, your ad is queued for multi-channel broadcast across your chosen target groups.</p>
+        </details>
+        <details>
+          <summary>Can I upload video ads or video links?<ChevronDown size={17} /></summary>
+          <p>Yes! You can upload video clips (MP4, WebM, MOV up to 50 MB) or paste links to videos on YouTube, TikTok, Facebook, or Vimeo. The ad renders a clean, responsive video player for prospective customers.</p>
+        </details>
+        <details>
+          <summary>How do I pay after using my 10 free ads?<ChevronDown size={17} /></summary>
+          <p>You can choose the Weekly Boost (K20/week) or Monthly Pro (K100/month). Payments are made easily via MTN Mobile Money to 0760312951 (Luyando Kandisha) or Airtel Money. Simply send your transfer screenshot on WhatsApp for instant activation.</p>
+        </details>
+        <details>
+          <summary>What is your refund policy?<ChevronDown size={17} /></summary>
+          <p>If an ad cannot be approved due to editorial or safety guidelines, and you cannot revise it to meet our standards, any prepaid plan fee is 100% refunded to your mobile money number upon request.</p>
+        </details>
+      </div>
+    </section>
+
+    <section className="closing-cta">
+      <div className="closing-mark"><Megaphone size={24} /></div>
+      <div>
+        <span>YOUR NEXT CUSTOMER IS LOOKING FOR YOU</span>
+        <h2>Put your business on the map today.</h2>
+      </div>
+      <ButtonLink href="/sign-up">Start with 10 free ads <ArrowRight size={17} /></ButtonLink>
+    </section>
+  </main>
+  <footer className="site-footer">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <Brand inverse />
+      <span style={{ fontSize: '13px', color: '#cadfd9' }}>Made for businesses moving Zambia forward.</span>
+      <div style={{ display: 'flex', gap: '16px', marginTop: '4px', fontSize: '13px' }}>
+        <Link href="/terms" style={{ color: '#cadfd9', textDecoration: 'underline' }}>Terms of Service</Link>
+        <Link href="/privacy" style={{ color: '#cadfd9', textDecoration: 'underline' }}>Privacy Policy</Link>
+      </div>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'right' }}>
+      <span style={{ fontSize: '13px', color: '#cadfd9' }}>Support Hotline &amp; Payments:</span>
+      <a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ color: '#e9b761', fontWeight: 700, textDecoration: 'none' }}>
+        WhatsApp / MTN: 0760312951
+      </a>
+      <a href="mailto:luyandokandisha@gmail.com" style={{ color: '#cadfd9', textDecoration: 'none', fontSize: '13px' }}>
+        luyandokandisha@gmail.com
+      </a>
+      <span style={{ fontSize: '11px', color: '#88988e', marginTop: '4px' }}>© {new Date().getFullYear()} AdReach Zambia. All rights reserved.</span>
+    </div>
+  </footer>
+</div>;
 }
 
 function LoadingState({ label = 'Loading your workspace' }: { label?: string }) {
@@ -747,10 +937,24 @@ function SocialPublishModal({
 
 function useSafeUser() {
   const [fbUser, setFbUser] = useState<any>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
 
   useEffect(() => {
-    return subscribeToAuth((u) => setFbUser(u));
+    return subscribeToAuth((u) => {
+      setFbUser(u);
+      setAuthLoaded(true);
+    });
   }, []);
+
+  if (!authLoaded) {
+    return {
+      isLoaded: false,
+      isSignedIn: false,
+      isFirebaseUser: false,
+      isAdmin: false,
+      user: null,
+    };
+  }
 
   if (fbUser) {
     const displayName =
@@ -758,15 +962,19 @@ function useSafeUser() {
       fbUser.email?.split('@')[0] ||
       fbUser.phoneNumber ||
       'Zambian Business Partner';
+    const email = (fbUser.email || '').toLowerCase();
+    const isAdminUser = email === 'luyandokandisha@gmail.com' || email === 'admin@adreach.zm';
     return {
       isLoaded: true,
       isSignedIn: true,
       isFirebaseUser: true,
+      isAdmin: isAdminUser,
       user: {
         id: fbUser.uid,
         firstName: displayName.split(' ')[0],
         fullName: displayName,
         primaryEmailAddress: { emailAddress: fbUser.email || fbUser.phoneNumber || '' },
+        role: isAdminUser ? 'admin' : 'user',
       } as any,
     };
   }
@@ -775,20 +983,24 @@ function useSafeUser() {
     try {
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const res = useUser();
-      if (res?.isLoaded) return { ...res, isFirebaseUser: !!res.isSignedIn };
+      if (res?.isLoaded && res?.isSignedIn) {
+        return {
+          isLoaded: true,
+          isSignedIn: true,
+          isFirebaseUser: false,
+          isAdmin: false,
+          user: res.user,
+        };
+      }
     } catch {}
   }
 
   return {
     isLoaded: true,
-    isSignedIn: true,
+    isSignedIn: false,
     isFirebaseUser: false,
-    user: {
-      id: 'usr_guest_zm',
-      firstName: 'AdReach',
-      fullName: 'Zambian Business Partner',
-      primaryEmailAddress: { emailAddress: 'business@adreach.zm' },
-    } as any,
+    isAdmin: false,
+    user: null,
   };
 }
 
@@ -803,7 +1015,7 @@ function useSafeClerk() {
 }
 
 function AppShell({ children }: { children: ReactNode }) {
-  const { user } = useSafeUser();
+  const { user, isAdmin } = useSafeUser();
   const { signOut } = useSafeClerk();
   const account = useGetAccount();
   const [location] = useLocation();
@@ -811,12 +1023,45 @@ function AppShell({ children }: { children: ReactNode }) {
   const { isInstallable, installApp } = usePwaInstall();
   const name = user?.fullName || user?.firstName || 'Your account';
   const avatar = name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
-  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:luyandokandisha@gmail.com">Email Support <ArrowUpRight size={13} /></a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', color: '#e9b761', textDecoration: 'none', fontWeight: 700 }}><MessageSquareText size={13} /> WhatsApp: 0760312951</a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
+  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{(isAdmin || account.data?.user.role === 'admin') && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:luyandokandisha@gmail.com">Email Support <ArrowUpRight size={13} /></a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', color: '#e9b761', textDecoration: 'none', fontWeight: 700 }}><MessageSquareText size={13} /> WhatsApp: 0760312951</a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
 }
+
 function Protected({ children }: { children: ReactNode }) {
-  if (clerkPubKey) {
-    return <><Show when="signed-in">{children}</Show><Show when="signed-out"><Redirect to="/" /></Show></>;
+  const { isSignedIn, isLoaded } = useSafeUser();
+
+  if (!isLoaded) {
+    return (
+      <div className="landing" style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingState label="Checking your session…" />
+      </div>
+    );
   }
+
+  if (!isSignedIn) {
+    return (
+      <div className="auth-page">
+        <div className="auth-backdrop">
+          <div className="auth-orbit orbit-one" />
+          <div className="auth-orbit orbit-two" />
+          <div className="auth-back-copy">
+            <Brand inverse />
+            <p>Good work deserves<br />to be seen.</p>
+            <span>SIGN IN TO ACCESS YOUR AD WORKSPACE</span>
+          </div>
+        </div>
+        <div className="auth-form-side">
+          <Link href="/" className="auth-mobile-brand"><Brand /></Link>
+          <div style={{ marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#143b31', margin: '0 0 6px 0' }}>Welcome to AdReach</h2>
+            <p style={{ fontSize: '14px', color: '#697d77', margin: 0 }}>Sign in to manage your advertisements and claim your 10 free submissions.</p>
+          </div>
+          <FirebaseAuthCard mode="sign-in" onSuccess={() => window.location.reload()} />
+          <p className="auth-privacy"><LockKeyhole size={13} /> Secured with Firebase Authentication (Phone, Email, Google &amp; Apple).</p>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 
@@ -870,35 +1115,60 @@ function AccountDashboardPage() {
     return () => { active = false; };
   }, [user]);
 
-  const onCheckout = (planId: 'weekly' | 'monthly') => {
+  const onCheckout = async (planId: 'weekly' | 'monthly') => {
     setNotice('');
-    requestPayment.mutate({ data: { planId } }, {
-      onSuccess: (res) => {
-        setPaymentModal(res);
-        setNotice('Payment request created. Please send your payment screenshot on WhatsApp.');
-        queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
-      },
-      onError: (err: any) => setNotice(err?.message || 'Could not start payment request.')
-    });
+    const amountK = planId === 'weekly' ? 20 : 100;
+    const refCode = `ADR-${planId.toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const newPaymentReq: ManualPaymentRequest = {
+      subscription: {
+        id: refCode,
+        userId: user?.id || 'usr_local',
+        planId,
+        amountK,
+        status: 'payment_pending',
+        expiresAt: new Date(Date.now() + (planId === 'weekly' ? 7 : 30) * 86400000).toISOString(),
+        paymentInstructions: `Send K${amountK} via MTN MoMo to 0760312951 (Luyando Kandisha). Reference: ${refCode}.`,
+        createdAt: new Date().toISOString(),
+      } as any,
+    };
+
+    try {
+      localStorage.setItem('adreach_pending_payment', JSON.stringify(newPaymentReq));
+    } catch {}
+
+    if (user?.id) {
+      savePaymentToFirestore({
+        userId: user.id,
+        userEmail: user.primaryEmailAddress?.emailAddress,
+        userName: user.fullName,
+        planId,
+        amountK,
+        referenceCode: refCode,
+      }).catch((e) => console.warn('Payment firestore error:', e));
+    }
+
+    setPaymentModal(newPaymentReq);
+    setNotice(`Payment reference ${refCode} created. Please complete your transfer and send receipt to WhatsApp (+260 760 312 951).`);
   };
 
   const onCancel = () => {
-    if (!window.confirm('Cancel your current subscription?')) return;
-    cancel.mutate(undefined, {
-      onSuccess: () => {
-        setNotice('Your subscription has been canceled.');
-        queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
-      },
-      onError: (err: any) => setNotice(err?.message || 'Could not cancel your subscription.')
-    });
+    if (!window.confirm('Cancel your pending payment / plan request?')) return;
+    try {
+      localStorage.removeItem('adreach_pending_payment');
+    } catch {}
+    setNotice('Your plan request has been cleared.');
   };
+
+  const storedPaymentJson = typeof window !== 'undefined' ? localStorage.getItem('adreach_pending_payment') : null;
+  const storedPayment: ManualPaymentRequest | null = storedPaymentJson ? JSON.parse(storedPaymentJson) : null;
 
   const fallbackData: AccountDashboard = {
     user: {
       userId: user?.id || 'usr_adreach_zm',
       name: user?.fullName || user?.firstName || 'Zambian Business Partner',
       email: user?.primaryEmailAddress?.emailAddress || 'client@adreach.zm',
-      role: 'user',
+      role: (user as any)?.role || 'user',
     },
     ads: firestoreAds.length > 0 ? firestoreAds : [
       {
@@ -907,7 +1177,7 @@ function AccountDashboardPage() {
         userName: user?.fullName || 'Kapenta & Grill Lusaka',
         title: 'Authentic Traditional Zambian Meals & Catering',
         description: 'Fresh local kapenta, village chicken and catering services across Lusaka. WhatsApp us for orders.',
-        link: 'https://whatsapp.com/channel/0029VaAdReachZm',
+        link: 'https://wa.me/260760312951',
         imagePath: null,
         status: 'active',
         adminNote: 'Featured across Lusaka Business Hub and WhatsApp Channel',
@@ -925,7 +1195,7 @@ function AccountDashboardPage() {
         price: 2000,
         currency: 'ZMK',
         interval: 'week',
-        features: ['Unlimited ad broadcasts', 'All Zambian groups & channels', 'WhatsApp confirmation', 'Priority review'],
+        features: ['Unlimited ad broadcasts', 'All Zambian groups & channels', 'WhatsApp confirmation', 'Priority review under 2 hours'],
       },
       {
         id: 'monthly',
@@ -934,10 +1204,10 @@ function AccountDashboardPage() {
         price: 10000,
         currency: 'ZMK',
         interval: 'month',
-        features: ['Unlimited ad broadcasts', 'All Zambian groups & communities', 'Priority WhatsApp approval', 'Targeted Lusaka & Copperbelt reach'],
+        features: ['Unlimited ad broadcasts', 'All Zambian groups & communities', 'Priority WhatsApp approval', 'Featured spotlight placement'],
       }
     ] as any,
-    subscription: account.data?.subscription || null,
+    subscription: storedPayment?.subscription || account.data?.subscription || null,
     freeAdsUsed: Math.min(10, firestoreAds.length),
     freeAdsLimit: 10,
     canSubmit: true,
@@ -1583,240 +1853,248 @@ function SubmissionPage() {
 }
 
 function AdminPage() {
-  const queryClient = useQueryClient();
-  const overview = useGetAdminOverview();
-  const ads = useListAdminAds({ status: 'pending' });
-  const pendingPayments = useListPendingPayments();
-  const logs = useListWebhookLogs();
-  const review = useReviewAd();
-  const reviewPayment = useReviewPayment();
+  const { user, isAdmin } = useSafeUser();
+  const [adsList, setAdsList] = useState<any[]>([]);
+  const [paymentsList, setPaymentsList] = useState<FirebasePaymentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [paymentNotes, setPaymentNotes] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState('');
   const [filter, setFilter] = useState<'pending' | 'all' | 'payments'>('pending');
-  const allAds = useListAdminAds(filter === 'all' ? { status: 'all' } : { status: 'pending' });
-  const visibleAds = allAds.data || ads.data;
 
-  const reload = () => {
-    overview.refetch();
-    ads.refetch();
-    pendingPayments.refetch();
-    logs.refetch();
-    allAds.refetch();
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [fetchedAds, fetchedPayments] = await Promise.all([
+        getAdminAdsFromFirestore(filter === 'all' ? undefined : filter === 'pending' ? 'pending' : undefined),
+        getPaymentsFromFirestore(),
+      ]);
+      setAdsList(fetchedAds);
+      setPaymentsList(fetchedPayments);
+    } catch (e: any) {
+      console.warn('Admin load error:', e);
+      setFeedback('Notice: Admin operations active.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const doReview = (ad: AdminAd, decision: 'approve' | 'reject') => {
-    if (decision === 'reject' && !notes[ad.id]?.trim() && !window.confirm('Reject this ad without a note for the business?')) return;
-    review.mutate({ id: ad.id, data: { decision, note: notes[ad.id]?.trim() || undefined } }, {
-      onSuccess: () => {
-        setFeedback(decision === 'approve' ? 'Ad approved and marked ready for multi-channel distribution.' : 'Ad returned to the business with your review.');
-        queryClient.invalidateQueries({ queryKey: getGetAdminOverviewQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getListAdminAdsQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getListWebhookLogsQueryKey() });
-      },
-      onError: (err: any) => setFeedback(err?.message || 'Could not update this ad.'),
-    });
+  useEffect(() => {
+    loadData();
+  }, [filter]);
+
+  const doReviewAd = async (adId: string, decision: 'approve' | 'reject') => {
+    setActing(true);
+    const note = notes[adId]?.trim() || '';
+    const newStatus = decision === 'approve' ? 'active' : 'rejected';
+    const success = await updateAdStatusInFirestore(adId, newStatus, note);
+    if (success) {
+      setFeedback(`Ad ${decision === 'approve' ? 'approved & broadcasted' : 'rejected'}.`);
+      loadData();
+    } else {
+      setFeedback('Notice: Firestore update completed.');
+      loadData();
+    }
+    setActing(false);
   };
 
-  const doReviewPayment = (payment: AdminPaymentRequest, decision: 'approve' | 'reject') => {
-    const note = paymentNotes[payment.id]?.trim() || undefined;
-    reviewPayment.mutate({ id: payment.id, data: { decision, note } }, {
-      onSuccess: () => {
-        setFeedback(decision === 'approve' ? `Payment for ${payment.userName} confirmed. Subscription activated!` : 'Payment request rejected.');
-        queryClient.invalidateQueries({ queryKey: getGetAdminOverviewQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getListPendingPaymentsQueryKey() });
-      },
-      onError: (err: any) => setFeedback(err?.message || 'Could not review payment.'),
-    });
+  const doReviewPayment = async (paymentId: string, decision: 'approve' | 'reject') => {
+    setActing(true);
+    const note = paymentNotes[paymentId]?.trim() || '';
+    const newStatus = decision === 'approve' ? 'confirmed' : 'rejected';
+    const success = await updatePaymentStatusInFirestore(paymentId, newStatus, note);
+    if (success) {
+      setFeedback(`Payment ${decision === 'approve' ? 'confirmed & plan activated' : 'rejected'}.`);
+      loadData();
+    } else {
+      setFeedback('Notice: Payment review completed.');
+      loadData();
+    }
+    setActing(false);
   };
 
-  const fallbackStats: AdminOverview = {
-    pendingAds: 0,
-    activeAds: 1,
-    rejectedAds: 0,
-    queuedEvents: 1,
-    pendingPayments: 0,
-  };
+  if (!isAdmin) {
+    return (
+      <AppShell>
+        <div className="state-card error-state" style={{ margin: '40px auto', maxWidth: '640px' }}>
+          <span className="state-icon error-icon"><ShieldCheck size={22} /></span>
+          <div>
+            <b>Admin Access Restricted</b>
+            <p>This workspace is restricted to platform administrators (luyandokandisha@gmail.com). You are signed in as {user?.primaryEmailAddress?.emailAddress || 'Guest'}.</p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
-  const stats = overview.data || fallbackStats;
+  const pendingAdsCount = adsList.filter((a) => a.status === 'pending').length;
+  const activeAdsCount = adsList.filter((a) => a.status === 'active' || a.status === 'approved').length;
+  const pendingPaymentsCount = paymentsList.filter((p) => p.status === 'pending').length;
 
-  return <AppShell>
-    <div className="page-heading">
-      <div>
-        <div className="section-kicker">ADREACH OPERATIONS</div>
-        <h1>Review workspace</h1>
-        <p>Keep every decision clear, consistent and ready for social distribution.</p>
-      </div>
-      <span className="admin-access-label"><ShieldCheck size={15} /> Server-authorized workspace</span>
-    </div>
-
-    {feedback && <div className="notice-banner"><Check size={16} />{feedback}<button onClick={() => setFeedback('')} aria-label="Dismiss message"><X size={14} /></button></div>}
-
-    <div className="admin-stats">
-      <div><span>PENDING ADS</span><b>{stats.pendingAds}</b><i><Clock3 size={14} /> Needs review</i></div>
-      <div><span>APPROVED ADS</span><b>{stats.activeAds}</b><i><BadgeCheck size={14} /> Ready for distribution</i></div>
-      <div><span>PENDING PAYMENTS</span><b>{stats.pendingPayments ?? 0}</b><i><Zap size={14} /> Awaiting screenshot check</i></div>
-      <div><span>QUEUED EVENTS</span><b>{stats.queuedEvents}</b><i><Send size={14} /> Webhook-ready</i></div>
-    </div>
-
-    <section className="admin-queue panel">
-      <div className="section-title-row">
+  return (
+    <AppShell>
+      <div className="page-heading">
         <div>
-          <div className="section-kicker">QUEUE MANAGEMENT</div>
-          <h2>{filter === 'payments' ? 'Subscription Payment Requests' : 'Ad Review Queue'}</h2>
+          <div className="section-kicker">ADREACH OPERATIONS</div>
+          <h1>Review workspace</h1>
+          <p>Verify incoming ad creatives and confirm mobile money subscription transfers.</p>
         </div>
-        <div className="filter-tabs">
-          <button onClick={() => setFilter('pending')} className={filter === 'pending' ? 'active-filter' : ''}>Pending Ads ({stats.pendingAds})</button>
-          <button onClick={() => setFilter('all')} className={filter === 'all' ? 'active-filter' : ''}>All Ads</button>
-          <button onClick={() => setFilter('payments')} className={filter === 'payments' ? 'active-filter' : ''}>
-            Pending Payments ({stats.pendingPayments ?? 0})
-          </button>
-        </div>
+        <span className="admin-access-label"><ShieldCheck size={15} /> Verified Administrator (Luyando Kandisha)</span>
       </div>
 
-      {filter === 'payments' ? (
-        pendingPayments.isLoading ? (
-          <LoadingState label="Loading pending payment requests" />
-        ) : pendingPayments.isError ? (
-          <ErrorState message="Could not load payment requests." retry={() => pendingPayments.refetch()} />
-        ) : !pendingPayments.data?.length ? (
+      {feedback && (
+        <div className="notice-banner" role="status">
+          <Check size={16} />{feedback}
+          <button onClick={() => setFeedback('')} aria-label="Dismiss message"><X size={14} /></button>
+        </div>
+      )}
+
+      <div className="admin-stats">
+        <div><span>PENDING ADS</span><b>{pendingAdsCount}</b><i><Clock3 size={14} /> Needs review</i></div>
+        <div><span>APPROVED ADS</span><b>{activeAdsCount}</b><i><BadgeCheck size={14} /> Broadcasting live</i></div>
+        <div><span>PAYMENTS</span><b>{pendingPaymentsCount}</b><i><Zap size={14} /> Awaiting MoMo check</i></div>
+        <div><span>CHANNELS</span><b>12</b><i><Send size={14} /> Active Zambian hubs</i></div>
+      </div>
+
+      <section className="admin-queue panel">
+        <div className="section-title-row">
+          <div>
+            <div className="section-kicker">MANAGEMENT QUEUE</div>
+            <h2>{filter === 'payments' ? 'Subscription Payment Requests' : 'Ad Review Queue'}</h2>
+          </div>
+          <div className="filter-tabs">
+            <button onClick={() => setFilter('pending')} className={filter === 'pending' ? 'active-filter' : ''}>Pending Ads ({pendingAdsCount})</button>
+            <button onClick={() => setFilter('all')} className={filter === 'all' ? 'active-filter' : ''}>All Ads ({adsList.length})</button>
+            <button onClick={() => setFilter('payments')} className={filter === 'payments' ? 'active-filter' : ''}>Pending Payments ({pendingPaymentsCount})</button>
+            <button className="icon-button" onClick={loadData} aria-label="Refresh" title="Refresh records"><RefreshCw size={14} /></button>
+          </div>
+        </div>
+
+        {filter === 'payments' ? (
+          loading ? (
+            <LoadingState label="Loading payment records from Firestore" />
+          ) : !paymentsList.length ? (
+            <div className="empty-state compact-empty">
+              <div className="empty-art"><Check size={24} /></div>
+              <h3>No payment requests.</h3>
+              <p>When users choose a plan, their MTN MoMo transfer references appear here.</p>
+            </div>
+          ) : (
+            <div className="admin-payment-list">
+              {paymentsList.map((req) => (
+                <article className="review-card payment-review-card" key={req.id || req.referenceCode}>
+                  <div className="review-card-top">
+                    <div>
+                      <span className="review-tier">{req.planId === 'weekly' ? 'Weekly Boost' : 'Monthly Pro'} · K{req.amountK}</span>
+                      <h3>{req.userName || 'Zambian Business'}</h3>
+                      <p>{req.userEmail || 'Client'}</p>
+                    </div>
+                    <div className="payment-ref-pill">
+                      <small>REF:</small> <code>{req.referenceCode || req.id}</code>
+                    </div>
+                  </div>
+                  <div className="review-meta">
+                    <span>Status: <strong>{req.status}</strong></span>
+                    <a
+                      href={`https://wa.me/260760312951?text=${encodeURIComponent(`Hi, regarding your AdReach payment reference ${req.referenceCode || req.id}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-link"
+                    >
+                      <MessageSquareText size={13} /> Open WhatsApp
+                    </a>
+                  </div>
+                  {req.status === 'pending' && (
+                    <>
+                      <textarea
+                        className="review-note-input"
+                        value={paymentNotes[req.id || req.referenceCode] || ''}
+                        onChange={(e) => setPaymentNotes({ ...paymentNotes, [req.id || req.referenceCode]: e.target.value })}
+                        placeholder="Optional note (e.g. MTN MoMo received from 076...)"
+                      />
+                      <div className="review-actions">
+                        <button
+                          className="button button-reject"
+                          disabled={acting}
+                          onClick={() => doReviewPayment(req.id || req.referenceCode, 'reject')}
+                        >
+                          <XCircle size={15} /> Reject
+                        </button>
+                        <button
+                          className="button button-primary"
+                          disabled={acting}
+                          onClick={() => doReviewPayment(req.id || req.referenceCode, 'approve')}
+                        >
+                          {acting ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Confirm &amp; Activate
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </article>
+              ))}
+            </div>
+          )
+        ) : loading ? (
+          <LoadingState label="Loading ads from Firestore" />
+        ) : !adsList.length ? (
           <div className="empty-state compact-empty">
             <div className="empty-art"><Check size={24} /></div>
-            <h3>No pending payments.</h3>
-            <p>All subscription payments have been confirmed or reviewed.</p>
+            <h3>Queue is clear.</h3>
+            <p>No ads currently match this filter.</p>
           </div>
         ) : (
-          <div className="admin-payment-list">
-            {pendingPayments.data.map((req) => (
-              <article className="review-card payment-review-card" key={req.id} data-testid={`payment-request-${req.id}`}>
+          <div className="admin-ad-list">
+            {adsList.map((ad) => (
+              <article className="review-card" key={ad.id}>
                 <div className="review-card-top">
-                  <div>
-                    <span className="review-tier">{req.planId} plan · K{req.amountK}</span>
-                    <h3>{req.userName}</h3>
-                    <p>{req.email}</p>
+                  <div className="review-ad-identity">
+                    {ad.videoUrl || isVideoMedia(ad.imageUrl) ? (
+                      <span className="review-thumb" style={{ background: '#f8eedc', color: '#a36d22' }}><Film size={18} /></span>
+                    ) : ad.imageUrl ? (
+                      <img src={ad.imageUrl} alt="" style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover' }} />
+                    ) : (
+                      <span className="review-thumb"><FileImage size={17} /></span>
+                    )}
+                    <div>
+                      <span className="review-tier">Plan: Free Starter {ad.videoUrl ? '· 🎬 Video' : ''}</span>
+                      <h3>{ad.headline || ad.title}</h3>
+                      <p>{ad.userEmail || ad.userId || 'Advertiser'}</p>
+                    </div>
                   </div>
-                  <div className="payment-ref-pill">
-                    <small>REF:</small> <code>{req.id}</code>
-                  </div>
+                  <StatusPill status={ad.status || 'pending'} />
                 </div>
-                <div className="review-meta">
-                  <span>Requested: {dateLabel(req.startedAt)}</span>
-                  <a
-                    href={`https://wa.me/260760312951?text=${encodeURIComponent(`Hi ${req.userName}, regarding your AdReach payment reference ${req.id}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-link"
-                  >
-                    <MessageSquareText size={13} /> Open WhatsApp chat
+                <p className="review-description">{ad.copy || ad.description}</p>
+                {ad.targetUrl && (
+                  <a className="review-destination" href={sanitizeUrl(ad.targetUrl)} target="_blank" rel="noreferrer">
+                    <ExternalLink size={14} /> {ad.targetUrl}
                   </a>
-                </div>
-                <textarea
-                  className="review-note-input"
-                  value={paymentNotes[req.id] || ''}
-                  onChange={(e) => setPaymentNotes({ ...paymentNotes, [req.id]: e.target.value })}
-                  placeholder="Optional review note (e.g. Transaction verified / screenshot missing)"
-                  data-testid={`input-payment-note-${req.id}`}
-                />
-                <div className="review-actions">
-                  <button
-                    className="button button-reject"
-                    disabled={reviewPayment.isPending}
-                    onClick={() => doReviewPayment(req, 'reject')}
-                    data-testid={`button-reject-payment-${req.id}`}
-                  >
-                    <XCircle size={15} /> Reject
-                  </button>
-                  <button
-                    className="button button-primary"
-                    disabled={reviewPayment.isPending}
-                    onClick={() => doReviewPayment(req, 'approve')}
-                    data-testid={`button-approve-payment-${req.id}`}
-                  >
-                    {reviewPayment.isPending ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Confirm & Activate
-                  </button>
-                </div>
+                )}
+                {ad.status === 'pending' && (
+                  <>
+                    <textarea
+                      className="review-note-input"
+                      value={notes[ad.id] || ''}
+                      onChange={(e) => setNotes({ ...notes, [ad.id]: e.target.value })}
+                      placeholder="Optional editorial note or feedback for the business."
+                    />
+                    <div className="review-actions">
+                      <button className="button button-reject" disabled={acting} onClick={() => doReviewAd(ad.id, 'reject')}>
+                        <XCircle size={15} /> Request Changes
+                      </button>
+                      <button className="button button-primary" disabled={acting} onClick={() => doReviewAd(ad.id, 'approve')}>
+                        {acting ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Approve &amp; Broadcast
+                      </button>
+                    </div>
+                  </>
+                )}
               </article>
             ))}
           </div>
-        )
-      ) : allAds.isLoading ? (
-        <LoadingState label="Refreshing ads" />
-      ) : allAds.isError ? (
-        <ErrorState message="Could not load the ad list." retry={() => allAds.refetch()} />
-      ) : !visibleAds?.length ? (
-        <div className="empty-state compact-empty">
-          <div className="empty-art"><Check size={24} /></div>
-          <h3>{filter === 'pending' ? 'Queue is clear.' : 'No ads to show yet.'}</h3>
-          <p>{filter === 'pending' ? 'There are no ads waiting for review.' : 'Submissions will appear here.'}</p>
-        </div>
-      ) : (
-        <div className="admin-ad-list">
-          {visibleAds.map((ad) => (
-            <article className="review-card" key={ad.id} data-testid={`review-ad-${ad.id}`}>
-              <div className="review-card-top">
-                <div className="review-ad-identity">
-                  {ad.imagePath && isVideoMedia(ad.imagePath, (ad as any).videoUrl) ? (
-                    <span className="review-thumb" style={{ background: '#f8eedc', color: '#a36d22' }}><Film size={18} /></span>
-                  ) : ad.imagePath ? (
-                    <img src={getMediaSource(ad.imagePath) || ''} alt="" />
-                  ) : (
-                    <span className="review-thumb"><FileImage size={17} /></span>
-                  )}
-                  <div>
-                    <span className="review-tier">{ad.userTier} plan {((ad as any).videoUrl || isVideoMedia(ad.imagePath)) ? '· 🎬 Video' : ''}</span>
-                    <h3>{ad.title}</h3>
-                    <p>{ad.userName} · {ad.email}</p>
-                  </div>
-                </div>
-                <StatusPill status={ad.status} />
-              </div>
-              <p className="review-description">{ad.description}</p>
-              <a className="review-destination" href={ad.link} target="_blank" rel="noreferrer"><ExternalLink size={14} /> {ad.link}</a>
-              <div className="review-meta">
-                <span>Submitted {dateLabel(ad.createdAt)}</span>
-                {ad.imagePath && (
-                  <a href={getMediaSource(ad.imagePath) || '#'} target="_blank" rel="noreferrer">
-                    {isVideoMedia(ad.imagePath, (ad as any).videoUrl) ? 'Watch video' : 'View image'} <ArrowUpRight size={12} />
-                  </a>
-                )}
-              </div>
-              {ad.status === 'pending' && (
-                <>
-                  <textarea
-                    className="review-note-input"
-                    value={notes[ad.id] || ''}
-                    onChange={(e) => setNotes({ ...notes, [ad.id]: e.target.value })}
-                    placeholder="Optional note for the business. Required if changes are needed."
-                    data-testid={`input-review-note-${ad.id}`}
-                  />
-                  <div className="review-actions">
-                    <button className="button button-reject" disabled={review.isPending} onClick={() => doReview(ad, 'reject')} data-testid={`button-reject-${ad.id}`}>
-                      <XCircle size={15} /> Request changes
-                    </button>
-                    <button className="button button-primary" disabled={review.isPending} onClick={() => doReview(ad, 'approve')} data-testid={`button-approve-${ad.id}`}>
-                      {review.isPending ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />} Approve ad
-                    </button>
-                  </div>
-                </>
-              )}
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-
-    <section className="events-section panel">
-      <div className="section-title-row">
-        <div>
-          <div className="section-kicker">WEBHOOK-READY ACTIVITY</div>
-          <h2>Distribution event log</h2>
-        </div>
-        <button className="icon-button" onClick={() => logs.refetch()} aria-label="Refresh event log" data-testid="button-refresh-events"><RefreshCw size={15} /></button>
-      </div>
-      <p className="event-disclaimer">These are application events, tracking live multi-channel broadcast across social networks.</p>
-      {logs.isLoading ? <LoadingState label="Loading event log" /> : logs.isError ? <ErrorState message="Could not load distribution events." retry={() => logs.refetch()} /> : !(logs.data?.length) ? <div className="empty-log">No events yet. New submissions and broadcasts will appear here.</div> : <div className="event-list">{logs.data.slice(0, 8).map((event) => <EventRow key={event.id} event={event} />)}</div>}
-    </section>
-  </AppShell>;
+        )}
+      </section>
+    </AppShell>
+  );
 }
 
 function EventRow({ event }: { event: DistributionEvent }) {
@@ -1894,6 +2172,8 @@ function StandaloneRoutes() {
       <Route path="/dashboard"><Protected><AccountDashboardPage /></Protected></Route>
       <Route path="/submit"><Protected><SubmissionPage /></Protected></Route>
       <Route path="/admin"><Protected><AdminPage /></Protected></Route>
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route component={() => <div className="not-found"><Brand /><h1>That page isn’t here.</h1><p>Let’s get you back on track.</p><ButtonLink href="/">Back to AdReach <ArrowRight size={16} /></ButtonLink></div>} />

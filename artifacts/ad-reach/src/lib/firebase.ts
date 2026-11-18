@@ -4,6 +4,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  doc,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -250,7 +252,12 @@ export async function getAdsFromFirestore(maxRecords: number = 20): Promise<Fire
   const firestore = getFirebaseDb();
   if (!firestore) return [];
   try {
-    const q = query(collection(firestore, 'ads'), orderBy('createdAt', 'desc'), limit(maxRecords));
+    const q = query(
+      collection(firestore, 'ads'),
+      where('status', 'in', ['active', 'approved']),
+      orderBy('createdAt', 'desc'),
+      limit(maxRecords)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -278,28 +285,148 @@ export async function uploadAdCreativeToStorage(file: File, adId: string): Promi
   }
 }
 
-// Fallback plans for Zambia
+// Verified subscription plans for Zambia
 export const DEFAULT_ZAMBIAN_PLANS = [
   {
-    id: 'starter_weekly',
-    name: 'Starter Weekly Blast',
-    price: 15000,
-    priceFormatted: 'K150 / week',
+    id: 'weekly',
+    name: 'Weekly Boost',
+    price: 2000,
+    amountK: 20,
+    priceFormatted: 'K20 / week',
     cadence: 'weekly',
     intervalLabel: '7 days',
-    adLimit: 5,
-    channels: ['AdReach WhatsApp Deals', 'Facebook Lusaka Hub', 'Instagram Spotlight'],
-    features: ['5 Ad Broadcasts', 'Top 5 Zambian Groups', 'WhatsApp Channel Inclusion', 'Live Performance Tracking'],
+    adLimit: 999,
+    channels: ['AdReach Facebook Network', 'Daily Deals WhatsApp Channel', 'Targeted Lusaka & Copperbelt Groups'],
+    features: ['Unlimited ad broadcasts', 'All Zambian groups & communities', 'Priority WhatsApp verification', 'Targeted Lusaka & Copperbelt reach'],
   },
   {
-    id: 'growth_monthly',
-    name: 'Business Growth Pro',
-    price: 45000,
-    priceFormatted: 'K450 / month',
+    id: 'monthly',
+    name: 'Monthly Pro',
+    price: 10000,
+    amountK: 100,
+    priceFormatted: 'K100 / month',
     cadence: 'monthly',
     intervalLabel: '30 days',
-    adLimit: 25,
-    channels: ['All 12 Verified Communities', 'Featured Daily Highlights', 'VIP Zambian B2B Network'],
-    features: ['25 Ad Broadcasts', 'All Zambian Groups & Communities', 'Priority Approval within 2 hours', 'Targeted Lusaka & Copperbelt Reach'],
+    adLimit: 999,
+    channels: ['All 12 Verified Communities', 'Featured Daily Highlights', 'VIP Zambian B2B LinkedIn Network'],
+    features: ['Unlimited ad broadcasts', 'All Zambian groups & communities', 'Featured spotlight placement', 'VIP priority review under 2 hours'],
   },
 ];
+
+export interface FirebasePaymentRecord {
+  id?: string;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  planId: 'weekly' | 'monthly';
+  amountK: number;
+  referenceCode: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+  note?: string;
+  createdAt: any;
+}
+
+export async function savePaymentToFirestore(payment: {
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+  planId: 'weekly' | 'monthly';
+  amountK: number;
+  referenceCode: string;
+}): Promise<string | null> {
+  const firestore = getFirebaseDb();
+  if (!firestore) return null;
+  try {
+    const docRef = await addDoc(collection(firestore, 'payments'), {
+      userId: payment.userId,
+      userEmail: payment.userEmail || '',
+      userName: payment.userName || '',
+      planId: payment.planId,
+      amountK: payment.amountK,
+      referenceCode: payment.referenceCode,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving payment to Firestore:', error);
+    return null;
+  }
+}
+
+export async function getAdminAdsFromFirestore(statusFilter?: string): Promise<FirebaseAdDocument[]> {
+  const firestore = getFirebaseDb();
+  if (!firestore) return [];
+  try {
+    let q = query(collection(firestore, 'ads'), orderBy('createdAt', 'desc'), limit(50));
+    if (statusFilter && statusFilter !== 'all') {
+      q = query(collection(firestore, 'ads'), where('status', '==', statusFilter), orderBy('createdAt', 'desc'), limit(50));
+    }
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<FirebaseAdDocument, 'id'>),
+    }));
+  } catch (error) {
+    console.error('Error fetching admin ads from Firestore:', error);
+    return [];
+  }
+}
+
+export async function updateAdStatusInFirestore(
+  adId: string,
+  status: 'active' | 'approved' | 'rejected',
+  adminNote?: string
+): Promise<boolean> {
+  const firestore = getFirebaseDb();
+  if (!firestore) return false;
+  try {
+    const adDocRef = doc(firestore, 'ads', adId);
+    await updateDoc(adDocRef, {
+      status,
+      adminNote: adminNote || '',
+      reviewedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating ad status:', error);
+    return false;
+  }
+}
+
+export async function getPaymentsFromFirestore(): Promise<FirebasePaymentRecord[]> {
+  const firestore = getFirebaseDb();
+  if (!firestore) return [];
+  try {
+    const q = query(collection(firestore, 'payments'), orderBy('createdAt', 'desc'), limit(50));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<FirebasePaymentRecord, 'id'>),
+    }));
+  } catch (error) {
+    console.error('Error fetching payments from Firestore:', error);
+    return [];
+  }
+}
+
+export async function updatePaymentStatusInFirestore(
+  paymentId: string,
+  status: 'confirmed' | 'rejected',
+  note?: string
+): Promise<boolean> {
+  const firestore = getFirebaseDb();
+  if (!firestore) return false;
+  try {
+    const paymentDocRef = doc(firestore, 'payments', paymentId);
+    await updateDoc(paymentDocRef, {
+      status,
+      reviewNote: note || '',
+      reviewedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return false;
+  }
+}
