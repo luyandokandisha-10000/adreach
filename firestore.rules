@@ -17,8 +17,8 @@ service cloud.firestore {
       allow create: if request.resource.data.headline is string
                     && request.resource.data.copy is string
                     && request.resource.data.headline.size() > 0
-                    && request.resource.data.headline.size() <= 120
-                    && request.resource.data.copy.size() <= 1500;
+                    && request.resource.data.headline.size() <= 300
+                    && request.resource.data.copy.size() <= 5000;
       allow update, delete: if isSignedIn();
     }
 

@@ -222,10 +222,23 @@ export async function saveAdToFirestore(ad: Omit<FirebaseAdDocument, 'createdAt'
     return null;
   }
   try {
-    const docRef = await addDoc(collection(firestore, 'ads'), {
-      ...ad,
+    const cleanDoc: Record<string, any> = {
+      headline: ad.headline || '',
+      copy: ad.copy || '',
+      status: ad.status || 'active',
+      category: ad.category || 'General Business',
       createdAt: serverTimestamp(),
-    });
+    };
+    if (ad.targetUrl) cleanDoc.targetUrl = ad.targetUrl;
+    if (ad.imageUrl) cleanDoc.imageUrl = ad.imageUrl;
+    if (ad.videoUrl) cleanDoc.videoUrl = ad.videoUrl;
+    if (ad.mediaType) cleanDoc.mediaType = ad.mediaType;
+    if (ad.selectedCommunities) cleanDoc.selectedCommunities = ad.selectedCommunities;
+    if (ad.contactPhone) cleanDoc.contactPhone = ad.contactPhone;
+    if (ad.userEmail) cleanDoc.userEmail = ad.userEmail;
+    if (ad.userId) cleanDoc.userId = ad.userId;
+
+    const docRef = await addDoc(collection(firestore, 'ads'), cleanDoc);
     return docRef.id;
   } catch (error) {
     console.error('Error saving ad to Firestore:', error);

@@ -363,6 +363,7 @@ function SocialPublishModal({
   ad: Ad;
   onClose: () => void;
 }) {
+  const [modalTab, setModalTab] = useState<'instant-publish' | 'communities'>('instant-publish');
   const [selectedIds, setSelectedIds] = useState<string[]>([
     'main-adreach-fb',
     'main-adreach-wa',
@@ -377,8 +378,62 @@ function SocialPublishModal({
   const [customUrl, setCustomUrl] = useState('');
   const [customList, setCustomList] = useState<{ id: string; name: string; url: string; platform: string }[]>([]);
   const [publishing, setPublishing] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [broadcastNotice, setBroadcastNotice] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const videoLink = (ad as any).videoUrl || (isVideoMedia(ad.imagePath) ? ad.imagePath : null);
+
+  const postLines = [
+    `📢 *${ad.title.toUpperCase()}*`,
+    '',
+    ad.description,
+    '',
+  ];
+
+  if (videoLink) {
+    postLines.push(`🎬 *Promo Video:* ${videoLink}`);
+    postLines.push('');
+  }
+
+  postLines.push(`👉 *Contact & Inquiries:* ${ad.link}`);
+  postLines.push('');
+  postLines.push('✨ Featured on AdReach Zambia #Zambia #Lusaka #Copperbelt #ZambiaBusiness #AdReach');
+
+  const postText = postLines.join('\n');
+
+  const shareIntents = {
+    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(postText)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ad.link)}&quote=${encodeURIComponent(postText)}`,
+    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(ad.title + (videoLink ? ' (Watch Video)' : '') + ' - ' + ad.link)}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ad.link)}`,
+    telegram: `https://t.me/share/url?url=${encodeURIComponent(ad.link)}&text=${encodeURIComponent(postText)}`,
+    formattedText: postText,
+  };
+
+  const copyPost = () => {
+    try {
+      navigator.clipboard.writeText(postText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  };
+
+  const triggerNativeShare = async () => {
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({
+          title: ad.title,
+          text: postText,
+          url: ad.link,
+        });
+      } catch (err) {
+        console.warn('Share cancelled or not supported:', err);
+      }
+    } else {
+      copyPost();
+      alert('Post copied to clipboard! You can now paste into Facebook, LinkedIn, or WhatsApp.');
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -421,45 +476,13 @@ function SocialPublishModal({
     return matchCat && matchQuery;
   });
 
+  const selectedCommunitiesList = allAvailable.filter((c) => selectedIds.includes(c.id));
+
   const publishNow = async () => {
     setPublishing(true);
-    const videoLink = (ad as any).videoUrl || (isVideoMedia(ad.imagePath) ? ad.imagePath : null);
-
-    const postLines = [
-      `📢 *${ad.title.toUpperCase()}*`,
-      '',
-      ad.description,
-      '',
-    ];
-
-    if (videoLink) {
-      postLines.push(`🎬 *Promo Video:* ${videoLink}`);
-      postLines.push('');
-    }
-
-    postLines.push(`👉 *Contact & Inquiries:* ${ad.link}`);
-    postLines.push('');
-    postLines.push('✨ Featured on AdReach Zambia #Zambia #Lusaka #Copperbelt #ZambiaBusiness #AdReach');
-
-    const postText = postLines.join('\n');
-
-    // Automatically copy text to clipboard for convenience
+    copyPost();
     try {
-      await navigator.clipboard.writeText(postText);
-      setCopied(true);
-    } catch {}
-
-    const shareIntents = {
-      whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(postText)}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ad.link)}&quote=${encodeURIComponent(postText)}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(ad.title + (videoLink ? ' (Watch Video)' : '') + ' - ' + ad.link)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ad.link)}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(ad.link)}&text=${encodeURIComponent(postText)}`,
-      formattedText: postText,
-    };
-
-    try {
-      const res = await fetch('/api/social/publish', {
+      await fetch('/api/social/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -469,51 +492,11 @@ function SocialPublishModal({
           customGroups: customList.filter((g) => selectedIds.includes(g.id)),
         }),
       });
-      if (res.ok) {
-        const json = await res.json();
-        setResult({ ...json, shareIntents });
-        setPublishing(false);
-        return;
-      }
     } catch {}
-
-    // Standalone & GitHub Pages seamless delivery
-    setResult({
-      success: true,
-      message: `Your ad is live and prepared for broadcast across ${selectedIds.length} target Zambian communities!`,
-      channelsCount: selectedIds.length,
-      shareIntents,
-    });
     setPublishing(false);
+    setBroadcastNotice(`Ad text copied to clipboard! Ready to broadcast to ${selectedIds.length} target Zambian communities.`);
+    setModalTab('instant-publish');
   };
-
-  const copyPost = () => {
-    const text = result?.shareIntents?.formattedText;
-    if (text) {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const triggerNativeShare = async () => {
-    if (typeof navigator !== 'undefined' && (navigator as any).share) {
-      try {
-        await (navigator as any).share({
-          title: ad.title,
-          text: result?.shareIntents?.formattedText || ad.description,
-          url: ad.link,
-        });
-      } catch (err) {
-        console.warn('Share cancelled or not supported:', err);
-      }
-    } else {
-      copyPost();
-      alert('Text copied to clipboard! You can now paste into WhatsApp, Facebook, or any app.');
-    }
-  };
-
-  const selectedCommunitiesList = allAvailable.filter((c) => selectedIds.includes(c.id));
 
   return (
     <div className="dist-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
@@ -528,18 +511,40 @@ function SocialPublishModal({
           </button>
         </div>
 
-        {result ? (
-          <div className="social-dist-success">
-            <div className="notice-banner" style={{ marginTop: '14px' }}>
-              <Check size={16} /> {result.message}
-            </div>
+        {/* Modal Navigation Tabs */}
+        <div style={{ display: 'flex', gap: '8px', margin: '14px 0 16px' }}>
+          <button
+            type="button"
+            className={`filter-chip ${modalTab === 'instant-publish' ? 'active' : ''}`}
+            onClick={() => setModalTab('instant-publish')}
+            style={{ fontSize: '13px', padding: '8px 14px' }}
+          >
+            🚀 1-Click Publish (Facebook, LinkedIn, WhatsApp)
+          </button>
+          <button
+            type="button"
+            className={`filter-chip ${modalTab === 'communities' ? 'active' : ''}`}
+            onClick={() => setModalTab('communities')}
+            style={{ fontSize: '13px', padding: '8px 14px' }}
+          >
+            👥 Target Groups ({selectedIds.length})
+          </button>
+        </div>
 
+        {broadcastNotice && (
+          <div className="notice-banner" style={{ marginBottom: '14px' }}>
+            <Check size={16} /> {broadcastNotice}
+          </div>
+        )}
+
+        {modalTab === 'instant-publish' ? (
+          <div>
             <div className="copy-post-box">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <small style={{ fontWeight: 700, color: '#24483e' }}>FORMATTED PROMOTIONAL POST</small>
                 {copied && <span style={{ color: '#2b7858', fontSize: '12px', fontWeight: 700 }}>✓ Copied to clipboard!</span>}
               </div>
-              <pre>{result.shareIntents?.formattedText}</pre>
+              <pre>{postText}</pre>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button type="button" onClick={copyPost} className="button button-outline small-button">
                   {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied to Clipboard!' : 'Copy Formatted Text'}
@@ -552,44 +557,87 @@ function SocialPublishModal({
               </div>
             </div>
 
-            <div className="section-kicker" style={{ marginTop: '18px' }}>1-CLICK DIRECT SOCIAL SHARING</div>
+            <div className="section-kicker" style={{ marginTop: '18px' }}>1-CLICK DIRECT SOCIAL PUBLISHING</div>
+            <p style={{ margin: '4px 0 12px', fontSize: '13px', color: '#687b70' }}>
+              Click any channel below to open it with your ad pre-filled and post immediately:
+            </p>
             <div className="dist-intents-grid">
-              <a href={result.shareIntents?.whatsapp} target="_blank" rel="noreferrer" className="intent-card-btn intent-wa">
+              <a
+                href={shareIntents.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="intent-card-btn intent-fb"
+                onClick={() => copyPost()}
+              >
+                <Globe size={18} /> Post to Facebook (Page or Groups)
+              </a>
+              <a
+                href={shareIntents.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="intent-card-btn intent-li"
+                onClick={() => copyPost()}
+              >
+                <Link2 size={18} /> Post to LinkedIn (Feed or Page)
+              </a>
+              <a
+                href={shareIntents.whatsapp}
+                target="_blank"
+                rel="noreferrer"
+                className="intent-card-btn intent-wa"
+                onClick={() => copyPost()}
+              >
                 <MessageSquareText size={18} /> Post to WhatsApp Groups & Status
               </a>
-              <a href={result.shareIntents?.facebook} target="_blank" rel="noreferrer" className="intent-card-btn intent-fb">
-                <Globe size={18} /> Post to Facebook Groups
-              </a>
-              <a href={result.shareIntents?.telegram} target="_blank" rel="noreferrer" className="intent-card-btn" style={{ background: '#229ed9' }}>
+              <a
+                href={shareIntents.telegram}
+                target="_blank"
+                rel="noreferrer"
+                className="intent-card-btn"
+                style={{ background: '#229ed9' }}
+                onClick={() => copyPost()}
+              >
                 <Send size={18} /> Share on Telegram Channels
               </a>
-              <a href={result.shareIntents?.linkedin} target="_blank" rel="noreferrer" className="intent-card-btn intent-li">
-                <Link2 size={18} /> Share on LinkedIn
-              </a>
-              <a href={result.shareIntents?.twitter} target="_blank" rel="noreferrer" className="intent-card-btn intent-x">
+              <a
+                href={shareIntents.twitter}
+                target="_blank"
+                rel="noreferrer"
+                className="intent-card-btn intent-x"
+                onClick={() => copyPost()}
+              >
                 <Send size={18} /> Post to X / Twitter
               </a>
             </div>
 
             {selectedCommunitiesList.length > 0 && (
-              <div style={{ marginTop: '18px' }}>
-                <div className="section-kicker" style={{ marginBottom: '8px' }}>YOUR SELECTED GROUPS & CHANNELS ({selectedCommunitiesList.length})</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div className="section-kicker">SELECTED ZAMBIAN COMMUNITIES & GROUPS ({selectedCommunitiesList.length})</div>
+                  <button
+                    type="button"
+                    onClick={() => setModalTab('communities')}
+                    style={{ background: 'transparent', border: 'none', color: '#256b56', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    + Add or change groups
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
                   {selectedCommunitiesList.map((comm) => (
-                    <div key={comm.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', background: '#f5f7f2', border: '1px solid #dce4d6' }}>
+                    <div key={comm.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '8px', background: '#f5f7f2', border: '1px solid #dce4d6' }}>
                       <div>
-                        <b style={{ fontSize: '13px', color: '#1e4033', display: 'block' }}>{comm.name}</b>
-                        <small style={{ color: '#6d7f75', fontSize: '11px' }}>{comm.platform.toUpperCase()} · {comm.members}</small>
+                        <b style={{ fontSize: '14px', color: '#1e4033', display: 'block' }}>{comm.name}</b>
+                        <small style={{ color: '#6d7f75', fontSize: '12px' }}>{comm.platform.toUpperCase()} · {comm.members}</small>
                       </div>
                       <a
                         href={comm.url}
                         target="_blank"
                         rel="noreferrer"
                         className="button button-outline small-button"
-                        style={{ padding: '4px 10px', fontSize: '12px', minHeight: '32px' }}
+                        style={{ padding: '6px 12px', fontSize: '13px', minHeight: '36px' }}
                         onClick={() => copyPost()}
                       >
-                        Open Group & Paste <ExternalLink size={12} />
+                        Open Group & Paste <ExternalLink size={13} />
                       </a>
                     </div>
                   ))}
@@ -597,7 +645,7 @@ function SocialPublishModal({
               </div>
             )}
 
-            <button type="button" className="button button-primary" style={{ width: '100%', marginTop: '18px', minHeight: '48px', fontSize: '15px' }} onClick={onClose}>
+            <button type="button" className="button button-primary" style={{ width: '100%', marginTop: '20px', minHeight: '48px', fontSize: '15px' }} onClick={onClose}>
               Done / Return to Dashboard
             </button>
           </div>
@@ -687,7 +735,7 @@ function SocialPublishModal({
                 onClick={publishNow}
                 disabled={publishing || selectedIds.length === 0}
               >
-                {publishing ? <><LoaderCircle className="spin" size={16} /> Broadcasting Ad…</> : <><Megaphone size={16} /> Broadcast to {selectedIds.length} Communities Now</>}
+                {publishing ? <><LoaderCircle className="spin" size={16} /> Preparing Broadcast…</> : <><Megaphone size={16} /> Broadcast & Post to {selectedIds.length} Communities</>}
               </button>
             </div>
           </>
@@ -1122,9 +1170,9 @@ function AccountDashboardPage() {
 
 function SubmissionPage() {
   const { user } = useSafeUser();
+  const [, setLocation] = useLocation();
   const account = useGetAccount();
   const createAd = useCreateAd();
-  const requestUpload = useRequestUploadUrl();
   const requestPayment = useRequestManualPayment();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
@@ -1139,6 +1187,7 @@ function SubmissionPage() {
   const [success, setSuccess] = useState('');
   const [uploading, setUploading] = useState(false);
   const [paymentModal, setPaymentModal] = useState<ManualPaymentRequest | null>(null);
+  const [broadcastModalAd, setBroadcastModalAd] = useState<Ad | null>(null);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([
     'main-adreach-fb',
     'main-adreach-wa',
@@ -1174,7 +1223,7 @@ function SubmissionPage() {
   const plansQuery = useListPlans();
   const plans = plansQuery.data || data?.plans || [];
   const canSubmit = data?.canSubmit !== false;
-  const formBusy = createAd.isPending || uploading || requestUpload.isPending;
+  const formBusy = uploading;
 
   const toggleGroup = (id: string) => {
     setSelectedGroupIds((prev) =>
@@ -1184,54 +1233,33 @@ function SubmissionPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!data || !canSubmit || formBusy) return;
+    if (!data || !canSubmit) return;
     setError(''); setSuccess('');
+
+    if (!title.trim() || !description.trim()) {
+      setError('Please provide both an ad title and a description.');
+      return;
+    }
+
     try {
-      let mediaPath: string | null = preview || null;
-      if (file) {
-        setUploading(true);
-        try {
-          const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } });
-          const response = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-          if (response.ok) {
-            mediaPath = upload.objectPath;
-          }
-        } catch {
-          // If standalone/GitHub Pages, use preview DataURL so media works
-          mediaPath = preview;
-        }
-        setUploading(false);
-      }
+      setUploading(true);
+      const mediaPath: string | null = preview || null;
 
-      const finalVideoUrl = mediaType === 'video' ? (videoUrl.trim() || mediaPath || undefined) : undefined;
-      const finalImagePath = mediaType === 'image' ? mediaPath : (preview || null);
+      const cleanLink = link.trim()
+        ? (link.trim().startsWith('http://') || link.trim().startsWith('https://') ? link.trim() : `https://${link.trim()}`)
+        : 'https://adreach.co.zm';
 
-      try {
-        await createAd.mutateAsync({
-          data: {
-            userName: adUserName.trim() || data.user.name,
-            title: title.trim(),
-            description: description.trim(),
-            link: link.trim(),
-            imagePath: mediaPath,
-            shareToAdReachChannels: true,
-            socialAccountIds: selectedGroupIds,
-          },
-        });
-      } catch (backendErr) {
-        console.warn('Backend API notice:', backendErr);
-      }
+      const finalVideoUrl = mediaType === 'video' ? (videoUrl.trim() || (preview.startsWith('data:video/') ? preview : undefined)) : undefined;
+      const finalImagePath = mediaType === 'image' ? (preview || mediaPath) : null;
 
-      const newAdRecord: any = {
+      const newAdRecord: Ad = {
         id: `ad-${Date.now()}`,
         userId: user?.id || data.user.userId,
         userName: adUserName.trim() || data.user.name,
         title: title.trim(),
         description: description.trim(),
-        link: link.trim(),
+        link: cleanLink,
         imagePath: mediaPath,
-        videoUrl: finalVideoUrl,
-        mediaType,
         status: 'active',
         adminNote: mediaType === 'video' ? 'Video ad ready for social broadcast' : 'Broadcast ready for Zambian groups',
         planId: 'Free Starter (10 free ads)',
@@ -1239,12 +1267,24 @@ function SubmissionPage() {
         socialAccountIds: selectedGroupIds,
         createdAt: new Date().toISOString(),
       };
+      (newAdRecord as any).videoUrl = finalVideoUrl;
+      (newAdRecord as any).mediaType = mediaType;
 
-      // Also persist to Firebase Cloud Firestore
-      await saveAdToFirestore({
+      // 1. Immediately save to localStorage so the ad is NEVER lost
+      try {
+        const stored = localStorage.getItem('adreach_local_ads');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(newAdRecord);
+        localStorage.setItem('adreach_local_ads', JSON.stringify(list));
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+
+      // 2. Persist to Firebase Cloud Firestore asynchronously
+      saveAdToFirestore({
         headline: title.trim(),
         copy: description.trim(),
-        targetUrl: link.trim(),
+        targetUrl: cleanLink,
         category: groupCategory || 'General Business',
         status: 'active',
         selectedCommunities: selectedGroupIds,
@@ -1253,19 +1293,15 @@ function SubmissionPage() {
         imageUrl: finalImagePath || undefined,
         videoUrl: finalVideoUrl,
         mediaType,
-      });
+      }).catch((fbErr) => console.warn('Firestore notice:', fbErr));
 
-      // Save locally to localStorage so user sees it instantly on dashboard
-      try {
-        const stored = localStorage.getItem('adreach_local_ads');
-        const list = stored ? JSON.parse(stored) : [];
-        list.unshift(newAdRecord);
-        localStorage.setItem('adreach_local_ads', JSON.stringify(list));
-      } catch {}
-
+      // 3. Clear uploading and refresh query cache
+      setUploading(false);
       queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
-      setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview(''); setVideoUrl('');
-      setSuccess('Your ad is live! It has been submitted and queued for social broadcast across your selected groups.');
+
+      // 4. Open Social Publish & Broadcast modal immediately!
+      setSuccess('Your ad is live! Now broadcast it across your selected social channels.');
+      setBroadcastModalAd(newAdRecord);
     } catch (err: any) {
       setUploading(false);
       setError(err?.message || 'We couldn’t submit your ad. Please try again.');
@@ -1363,7 +1399,7 @@ function SubmissionPage() {
           <div className="field-meta"><span>Write in your own voice.</span><span>{description.length}/3000</span></div>
 
           <label className="field-label" htmlFor="ad-link">Where can people find you? <span>Required</span></label>
-          <div className="input-with-icon"><Link2 size={16} /><input id="ad-link" type="url" value={link} onChange={(e) => setLink(e.target.value)} required placeholder="https://yourwebsite.com or a social profile" data-testid="input-ad-link" /></div>
+          <div className="input-with-icon"><Link2 size={16} /><input id="ad-link" type="text" value={link} onChange={(e) => setLink(e.target.value)} required placeholder="https://yourwebsite.com or social profile or WhatsApp" data-testid="input-ad-link" /></div>
 
           <label className="field-label">Add media (Image or Video) <span>Optional</span></label>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -1429,7 +1465,7 @@ function SubmissionPage() {
                   <Film size={16} />
                   <input
                     id="video-url"
-                    type="url"
+                    type="text"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://www.youtube.com/watch?v=... or TikTok / Facebook video URL"
@@ -1534,6 +1570,15 @@ function SubmissionPage() {
     )}
 
     {paymentModal && <PaymentModal payment={paymentModal} onClose={() => setPaymentModal(null)} />}
+    {broadcastModalAd && (
+      <SocialPublishModal
+        ad={broadcastModalAd}
+        onClose={() => {
+          setBroadcastModalAd(null);
+          setLocation('/dashboard');
+        }}
+      />
+    )}
   </AppShell>;
 }
 
