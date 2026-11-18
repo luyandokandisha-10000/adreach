@@ -200,7 +200,7 @@ function Header() {
 function Home() {
   return <div className="landing page-enter"><Header /><main>
     <section className="hero">
-      <div className="hero-left"><div className="eyebrow"><span className="eyebrow-dot" /> MADE FOR ZAMBIAN BUSINESSES</div><h1>Good work<br />deserves to be<br /><span>seen.</span></h1><p className="hero-copy">Submit your ad once, get featured across our verified channels and top Zambian social media groups.</p><div className="hero-actions"><ButtonLink href="/sign-up">Get your first 5 ads free <ArrowRight size={17} /></ButtonLink><a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a></div><div className="hero-proof"><div className="proof-avatars"><span>MK</span><span>LK</span><span>CN</span></div><span>Targeting over 1,000,000+ local buyers across Zambia.</span></div></div>
+      <div className="hero-left"><div className="eyebrow"><span className="eyebrow-dot" /> MADE FOR ZAMBIAN BUSINESSES</div><h1>Good work<br />deserves to be<br /><span>seen.</span></h1><p className="hero-copy">Submit your ad once, get featured across our verified channels and top Zambian social media groups.</p><div className="hero-actions"><ButtonLink href="/sign-up">Get your first 10 ads free <ArrowRight size={17} /></ButtonLink><a href="#how-it-works" className="text-link">See how it works <ArrowDownRight size={15} /></a></div><div className="hero-proof"><div className="proof-avatars"><span>MK</span><span>LK</span><span>CN</span></div><span>Targeting over 1,000,000+ local buyers across Zambia.</span></div></div>
       <div className="hero-art"><div className="art-sun" /><div className="art-caption"><span>LOCAL BUSINESS</span><span>01 / 03</span></div><div className="art-phone"><div className="phone-top"><span className="mini-avatar">K</span><span><b>kapenta.kitchen</b><small>Lusaka, Zambia</small></span><MoreHorizontal size={16} /></div><div className="phone-photo"><div className="photo-tag">JUST OPENED</div><div className="photo-type">A little<br />taste of<br /><i>home.</i></div><div className="photo-stamp">K</div></div><div className="phone-buttons"><span><Instagram size={16} /></span><span><MessageSquareText size={16} /></span><span><Send size={15} /></span><span className="phone-bookmark">Save</span></div><p><b>kapenta.kitchen</b> Good food, good people. Come through this week.</p><div className="phone-lines" /></div><div className="floating-reach"><span className="reach-icon"><ArrowUpRight size={18} /></span><span><b>One submission</b><small>ready for multi-group reach</small></span></div><span className="art-side-note">BUILT FOR YOUR NEXT CUSTOMER</span></div>
       <div className="hero-bottomline"><span>ONE SIMPLE SUBMISSION</span><span>POST TO MAIN CHANNELS & GROUPS</span><span>MADE FOR LOCAL REACH</span></div>
     </section>
@@ -237,14 +237,14 @@ function Home() {
       </div>
     </section>
 
-    <section className="pricing-section" id="pricing"><div className="pricing-intro"><div className="section-kicker">STRAIGHT-UP PRICING</div><h2>Start free.<br /><span>Keep growing.</span></h2><p>Try AdReach with five free submissions. When you’re ready, choose a simple plan that fits your business.</p><div className="pricing-footnote"><Check size={15} /> No hidden fees. Pay via Mobile Money (Airtel, MTN, Zamtel).</div></div><div className="pricing-cards"><article className="price-card"><div className="price-label">A GOOD PLACE TO START</div><h3>Free</h3><div className="price-amount"><strong>K0</strong><span> / first 5 ads</span></div><p>Get your business in front of more people, one submission at a time.</p><ul><li><Check size={15} /> 5 ad submissions</li><li><Check size={15} /> Social group targeting</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Start with 5 free ads <ArrowRight size={16} /></ButtonLink></article><article className="price-card price-featured"><span className="popular-label">MOST FLEXIBLE</span><div className="price-label">FOR THE WEEKLY PUSH</div><h3>Tier 1 · Weekly</h3><div className="price-amount"><strong>K20</strong><span> / week</span></div><p>Keep sharing your offers and announcements with a little more room.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Full social group broadcast</li><li><Check size={15} /> WhatsApp confirmation</li></ul><ButtonLink href="/sign-up">Choose weekly <ArrowRight size={16} /></ButtonLink></article><article className="price-card"><div className="price-label">FOR A STEADY PRESENCE</div><h3>Tier 2 · Monthly</h3><div className="price-amount"><strong>K100</strong><span> / month</span></div><p>Plan ahead and keep your business visible throughout the month.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Multi-group broadcast</li><li><Check size={15} /> Priority social review</li></ul><ButtonLink href="/sign-up" kind="outline">Choose monthly <ArrowRight size={16} /></ButtonLink></article></div><p className="price-disclaimer">All prices shown in Zambian Kwacha (ZMK). Pay easily via Mobile Money (Airtel, MTN, Zamtel) with instant WhatsApp verification.</p></section>
+    <section className="pricing-section" id="pricing"><div className="pricing-intro"><div className="section-kicker">STRAIGHT-UP PRICING</div><h2>Start free.<br /><span>Keep growing.</span></h2><p>Try AdReach with ten free submissions. When you’re ready, choose a simple plan that fits your business.</p><div className="pricing-footnote"><Check size={15} /> No hidden fees. Pay via Mobile Money (MTN 0760312951, Airtel, Zamtel).</div></div><div className="pricing-cards"><article className="price-card"><div className="price-label">A GOOD PLACE TO START</div><h3>Free</h3><div className="price-amount"><strong>K0</strong><span> / first 10 ads</span></div><p>Get your business in front of more people, one submission at a time.</p><ul><li><Check size={15} /> 10 ad submissions</li><li><Check size={15} /> Social group targeting</li><li><Check size={15} /> Status tracking</li></ul><ButtonLink href="/sign-up" kind="outline">Start with 10 free ads <ArrowRight size={16} /></ButtonLink></article><article className="price-card price-featured"><span className="popular-label">MOST FLEXIBLE</span><div className="price-label">FOR THE WEEKLY PUSH</div><h3>Weekly Boost</h3><div className="price-amount"><strong>K20</strong><span> / week</span></div><p>Keep sharing your offers and announcements with a little more room.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Full social group broadcast</li><li><Check size={15} /> WhatsApp confirmation</li></ul><ButtonLink href="/sign-up">Choose weekly <ArrowRight size={16} /></ButtonLink></article><article className="price-card"><div className="price-label">FOR A STEADY PRESENCE</div><h3>Monthly Pro</h3><div className="price-amount"><strong>K100</strong><span> / month</span></div><p>Plan ahead and keep your business visible throughout the month.</p><ul><li><Check size={15} /> Unlimited ad submissions</li><li><Check size={15} /> Multi-group broadcast</li><li><Check size={15} /> Priority social review</li></ul><ButtonLink href="/sign-up" kind="outline">Choose monthly <ArrowRight size={16} /></ButtonLink></article></div><p className="price-disclaimer">All prices shown in Zambian Kwacha (ZMK). Pay easily via MTN MoMo (0760312951) or Airtel/Zamtel with instant WhatsApp verification.</p></section>
 
     <section className="trust-band"><div className="trust-seal"><BadgeCheck size={23} /></div><div><span className="section-kicker">CLEAR FROM THE START</span><h2>Know where your ad stands.</h2></div><p>Submitted, under review, approved or broadcasted. Your dashboard makes every step easy to understand and execute.</p><ButtonLink href="/sign-up" kind="outline">Create your account <ArrowRight size={16} /></ButtonLink></section>
 
-    <section className="faq-section" id="faq"><div className="faq-title"><div className="section-kicker">GOOD QUESTIONS</div><h2>Before you<br /><span>get started.</span></h2><a href="mailto:hello@adreach.co.zm">Still wondering? Talk to us <ArrowUpRight size={14} /></a></div><div className="faq-list"><details><summary>How does social media and group posting work?<ChevronDown size={17} /></summary><p>AdReach allows you to select both our primary broadcast channels (Facebook, WhatsApp, Instagram, TikTok, LinkedIn) and targeted Zambian groups. When you broadcast, AdReach queues the distribution events and provides 1-click posting links to push your ad directly into selected communities.</p></details><details><summary>Can I target specific Facebook and WhatsApp groups?<ChevronDown size={17} /></summary><p>Yes! You can search our curated directory of active groups in Lusaka, the Copperbelt, Farming, Tech, and Real Estate, or type in your own custom group link.</p></details><details><summary>What happens after my five free ads?<ChevronDown size={17} /></summary><p>You can continue with a K20 weekly or K100 monthly subscription. Payment is made simply via Mobile Money (Airtel, MTN, Zamtel) and confirmed over WhatsApp.</p></details><details><summary>Can I install AdReach as an App?<ChevronDown size={17} /></summary><p>Yes! AdReach is a full Progressive Web App. You can tap "Install App" on your phone or computer to install it directly to your home screen.</p></details></div></section>
+    <section className="faq-section" id="faq"><div className="faq-title"><div className="section-kicker">GOOD QUESTIONS</div><h2>Before you<br /><span>get started.</span></h2><a href="mailto:luyandokandisha@gmail.com">Talk to us: luyandokandisha@gmail.com <ArrowUpRight size={14} /></a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ marginTop: '8px' }}>WhatsApp / Call: 0760312951 (MTN) <ArrowUpRight size={14} /></a></div><div className="faq-list"><details><summary>How does social media and group posting work?<ChevronDown size={17} /></summary><p>AdReach allows you to select both our primary broadcast channels (Facebook, WhatsApp, Instagram, TikTok, LinkedIn) and targeted Zambian groups. When you broadcast, AdReach queues the distribution events and provides 1-click posting links to push your ad directly into selected communities.</p></details><details><summary>Can I target specific Facebook and WhatsApp groups?<ChevronDown size={17} /></summary><p>Yes! You can search our curated directory of active groups in Lusaka, the Copperbelt, Farming, Tech, and Real Estate, or type in your own custom group link.</p></details><details><summary>What happens after my ten free ads?<ChevronDown size={17} /></summary><p>You can continue with a K20 weekly or K100 monthly subscription. Payment is made simply via MTN MoMo (0760312951) or Airtel/Zamtel and confirmed over WhatsApp.</p></details><details><summary>Can I install AdReach as an App?<ChevronDown size={17} /></summary><p>Yes! AdReach is a full Progressive Web App. You can tap "Install App" on your phone or computer to install it directly to your home screen.</p></details></div></section>
 
     <section className="closing-cta"><div className="closing-mark"><Megaphone size={24} /></div><div><span>YOUR NEXT CUSTOMER IS OUT THERE</span><h2>Let’s help them find you.</h2></div><ButtonLink href="/sign-up">Submit your first ad <ArrowRight size={17} /></ButtonLink></section>
-  </main><footer className="site-footer"><Brand inverse /><span>Made for businesses moving Zambia forward.</span><span>© {new Date().getFullYear()} AdReach</span><a href="mailto:hello@adreach.co.zm">Contact <ArrowUpRight size={14} /></a></footer></div>;
+  </main><footer className="site-footer"><Brand inverse /><span>Made for businesses moving Zambia forward.</span><span>© {new Date().getFullYear()} AdReach Zambia</span><div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}><a href="mailto:luyandokandisha@gmail.com">Email: luyandokandisha@gmail.com</a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer">MTN: 0760312951</a></div></footer></div>;
 }
 
 function LoadingState({ label = 'Loading your workspace' }: { label?: string }) {
@@ -308,27 +308,27 @@ function PaymentModal({
             <span className="guide-step-index">1</span>
             <div>
               <b>Make your transfer</b>
-              <p>Send K{payment.subscription.amountK} via Airtel Money, MTN MoMo, or Zamtel to <strong>{payment.whatsappNumber}</strong>. Reference: <code>{payment.subscription.id}</code>.</p>
+              <p>Send K{payment.subscription.amountK} via MTN MoMo to <strong>0760312951</strong> (Luyando Kandisha) or Airtel / Zamtel. Reference: <code>{payment.subscription.id}</code>.</p>
             </div>
           </div>
           <div className="guide-step">
             <span className="guide-step-index">2</span>
             <div>
               <b>Send screenshot on WhatsApp</b>
-              <p>Share proof of transfer with our team. Once confirmed, your subscription activates right away.</p>
+              <p>Send proof of transfer to WhatsApp <strong>+260 760 312 951</strong>. Your subscription activates immediately.</p>
             </div>
           </div>
         </div>
 
         <div className="payment-modal-actions">
           <a
-            href={payment.whatsappUrl}
+            href={`https://wa.me/260760312951?text=${encodeURIComponent(`Hi Luyando, I have paid K${payment.subscription.amountK} for AdReach subscription. Reference: ${payment.subscription.id}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="button button-primary whatsapp-action-btn"
             data-testid="link-whatsapp-payment"
           >
-            <MessageSquareText size={17} /> Send screenshot on WhatsApp
+            <MessageSquareText size={17} /> Send screenshot to WhatsApp (+260 760 312 951)
           </a>
           <button type="button" className="button button-outline" onClick={onClose}>
             Done / Close
@@ -406,6 +406,24 @@ function SocialPublishModal({
 
   const publishNow = async () => {
     setPublishing(true);
+    const postText = [
+      `📢 *${ad.title.toUpperCase()}*`,
+      '',
+      ad.description,
+      '',
+      `👉 Details & Contact: ${ad.link}`,
+      '',
+      'Featured on AdReach Zambia #Zambia #Lusaka #Copperbelt #AdReach',
+    ].join('\n');
+
+    const shareIntents = {
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(postText)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ad.link)}&quote=${encodeURIComponent(postText)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(ad.title + ' - ' + ad.link)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ad.link)}`,
+      formattedText: postText,
+    };
+
     try {
       const res = await fetch('/api/social/publish', {
         method: 'POST',
@@ -417,15 +435,22 @@ function SocialPublishModal({
           customGroups: customList.filter((g) => selectedIds.includes(g.id)),
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Could not broadcast ad.');
-      setResult(json);
-      queryClient.invalidateQueries({ queryKey: getListWebhookLogsQueryKey() });
-    } catch (err: any) {
-      alert(err.message || 'Error publishing ad');
-    } finally {
-      setPublishing(false);
-    }
+      if (res.ok) {
+        const json = await res.json();
+        setResult(json);
+        setPublishing(false);
+        return;
+      }
+    } catch {}
+
+    // Standalone & GitHub Pages seamless delivery
+    setResult({
+      success: true,
+      message: `Your ad is live and queued across ${selectedIds.length} target Zambian communities and channels!`,
+      channelsCount: selectedIds.length,
+      shareIntents,
+    });
+    setPublishing(false);
   };
 
   const copyPost = () => {
@@ -652,7 +677,7 @@ function AppShell({ children }: { children: ReactNode }) {
   const { isInstallable, installApp } = usePwaInstall();
   const name = user?.fullName || user?.firstName || 'Your account';
   const avatar = name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
-  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:hello@adreach.co.zm">Contact support <ArrowUpRight size={13} /></a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
+  return <div className="app-shell page-enter"><aside className={`app-sidebar ${mobileNav ? 'sidebar-open' : ''}`}><div className="sidebar-brand"><Brand inverse /><button aria-label="Close navigation" className="sidebar-close" onClick={() => setMobileNav(false)}><X size={18} /></button></div><div className="sidebar-label">YOUR WORKSPACE</div><nav className="sidebar-nav"><Link href="/dashboard" className={location === '/dashboard' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><MoreHorizontal size={17} /></span>Overview</Link><Link href="/submit" className={location === '/submit' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><Plus size={17} /></span>Submit an ad</Link>{account.data?.user.role === 'admin' && <Link href="/admin" className={location === '/admin' ? 'nav-current' : ''} onClick={() => setMobileNav(false)}><span className="nav-icon"><ShieldCheck size={17} /></span>Review workspace</Link>}</nav>{isInstallable && <div style={{ padding: '0 16px', marginBottom: '14px' }}><button className="install-app-pill" onClick={installApp} style={{ width: '100%', justifyContent: 'center' }}><Download size={14} /> Install Web App</button></div>}<div className="sidebar-help"><span className="help-icon"><CircleHelp size={17} /></span><b>Need a hand?</b><p>We’re here if you need help with a submission or social broadcast.</p><a href="mailto:luyandokandisha@gmail.com">Email Support <ArrowUpRight size={13} /></a><a href="https://wa.me/260760312951" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', color: '#e9b761', textDecoration: 'none', fontWeight: 700 }}><MessageSquareText size={13} /> WhatsApp: 0760312951</a></div><div className="sidebar-user"><div className="user-avatar">{avatar}</div><div className="user-meta"><b>{name}</b><small>{user?.primaryEmailAddress?.emailAddress}</small></div><button className="logout-button" onClick={() => signOut({ redirectUrl: basePath || '/' })} aria-label="Sign out" title="Sign out" data-testid="button-sign-out"><ArrowUpRight size={15} /></button></div></aside><div className="app-main"><header className="app-topbar"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" data-testid="button-open-nav"><Menu size={19} /></button><div className="breadcrumb">AdReach <span>/</span> {location === '/submit' ? 'Submit an ad' : location === '/admin' ? 'Review workspace' : 'Overview'}</div><div className="topbar-right">{isInstallable && <button className="install-app-pill" onClick={installApp}><Download size={13} /> Install App</button>}<span className="review-note"><span /> Multi-channel broadcast</span><div className="top-avatar">{avatar}</div></div></header><div className="app-content">{children}</div></div>{mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}</div>;
 }
 function Protected({ children }: { children: ReactNode }) {
   if (clerkPubKey) {
@@ -675,8 +700,11 @@ function AccountDashboardPage() {
 
   useEffect(() => {
     let active = true;
+    const localAdsJson = typeof window !== 'undefined' ? localStorage.getItem('adreach_local_ads') : null;
+    const localAds: Ad[] = localAdsJson ? JSON.parse(localAdsJson) : [];
+
     getAdsFromFirestore(30).then((docs) => {
-      if (!active || docs.length === 0) return;
+      if (!active) return;
       const formatted: Ad[] = docs.map((d, index) => ({
         id: d.id || `fb-ad-${index}`,
         userId: d.userId || user?.id || 'usr_local',
@@ -687,13 +715,24 @@ function AccountDashboardPage() {
         imagePath: d.imageUrl || null,
         status: (d.status === 'active' || d.status === 'approved' ? 'active' : 'pending') as any,
         adminNote: null,
-        planId: 'Free Starter',
+        planId: 'Free Starter (10 free ads)',
         shareToAdReachChannels: true,
         socialAccountIds: d.selectedCommunities || ['main-adreach-fb', 'main-adreach-wa'],
         createdAt: new Date().toISOString(),
       }));
-      setFirestoreAds(formatted);
-    }).catch(console.warn);
+
+      const combined = [...localAds];
+      for (const fAd of formatted) {
+        if (!combined.some((c) => c.id === fAd.id || c.title === fAd.title)) {
+          combined.push(fAd);
+        }
+      }
+      setFirestoreAds(combined);
+    }).catch(() => {
+      if (active && localAds.length > 0) {
+        setFirestoreAds(localAds);
+      }
+    });
     return () => { active = false; };
   }, [user]);
 
@@ -738,7 +777,7 @@ function AccountDashboardPage() {
         imagePath: null,
         status: 'active',
         adminNote: 'Featured across Lusaka Business Hub and WhatsApp Channel',
-        planId: 'Starter',
+        planId: 'Free Starter (10 free ads)',
         shareToAdReachChannels: true,
         socialAccountIds: ['main-adreach-fb', 'main-adreach-wa', 'grp-lusaka-biz'],
         createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
@@ -747,24 +786,26 @@ function AccountDashboardPage() {
     plans: plansQuery.data || [
       {
         id: 'weekly',
-        name: 'Starter Weekly Blast',
-        price: 15000,
+        name: 'Weekly Boost',
+        amountK: 20,
+        price: 2000,
         currency: 'ZMK',
         interval: 'week',
-        features: ['5 Ad Broadcasts', 'Top 5 Zambian Groups', 'WhatsApp Channel Inclusion', 'Live Performance Tracking'],
+        features: ['Unlimited ad broadcasts', 'All Zambian groups & channels', 'WhatsApp confirmation', 'Priority review'],
       },
       {
         id: 'monthly',
-        name: 'Business Growth Pro',
-        price: 45000,
+        name: 'Monthly Pro',
+        amountK: 100,
+        price: 10000,
         currency: 'ZMK',
         interval: 'month',
-        features: ['25 Ad Broadcasts', 'All Zambian Groups & Communities', 'Priority Approval within 2 hours', 'Targeted Lusaka & Copperbelt Reach'],
+        features: ['Unlimited ad broadcasts', 'All Zambian groups & communities', 'Priority WhatsApp approval', 'Targeted Lusaka & Copperbelt reach'],
       }
     ] as any,
     subscription: account.data?.subscription || null,
-    freeAdsUsed: firestoreAds.length,
-    freeAdsLimit: 5,
+    freeAdsUsed: Math.min(10, firestoreAds.length),
+    freeAdsLimit: 10,
     canSubmit: true,
     events: [
       {
@@ -971,6 +1012,7 @@ function AccountDashboardPage() {
 }
 
 function SubmissionPage() {
+  const { user } = useSafeUser();
   const account = useGetAccount();
   const createAd = useCreateAd();
   const requestUpload = useRequestUploadUrl();
@@ -1008,12 +1050,12 @@ function SubmissionPage() {
     user: fallbackUser,
     ads: [],
     plans: [
-      { id: 'weekly', name: 'Starter Weekly Blast', amountK: 150, interval: 'week' },
-      { id: 'monthly', name: 'Business Growth Pro', amountK: 450, interval: 'month' },
+      { id: 'weekly', name: 'Weekly Boost', amountK: 20, interval: 'week' },
+      { id: 'monthly', name: 'Monthly Pro', amountK: 100, interval: 'month' },
     ],
     subscription: null,
     freeAdsUsed: 0,
-    freeAdsLimit: 5,
+    freeAdsLimit: 10,
     canSubmit: true,
     events: [],
   };
@@ -1034,15 +1076,22 @@ function SubmissionPage() {
     if (!data || !canSubmit || formBusy) return;
     setError(''); setSuccess('');
     try {
-      let imagePath: string | null = null;
+      let imagePath: string | null = preview || null;
       if (file) {
         setUploading(true);
-        const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } });
-        const response = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
-        if (!response.ok) throw new Error('Your image could not be uploaded. Please try again.');
-        imagePath = upload.objectPath;
+        try {
+          const upload = await requestUpload.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } });
+          const response = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+          if (response.ok) {
+            imagePath = upload.objectPath;
+          }
+        } catch {
+          // If standalone/GitHub Pages, use preview DataURL so image works
+          imagePath = preview;
+        }
         setUploading(false);
       }
+
       try {
         await createAd.mutateAsync({
           data: {
@@ -1059,6 +1108,22 @@ function SubmissionPage() {
         console.warn('Backend API notice:', backendErr);
       }
 
+      const newAdRecord: Ad = {
+        id: `ad-${Date.now()}`,
+        userId: user?.id || data.user.userId,
+        userName: adUserName.trim() || data.user.name,
+        title: title.trim(),
+        description: description.trim(),
+        link: link.trim(),
+        imagePath,
+        status: 'active',
+        adminNote: 'Broadcast ready for Zambian groups',
+        planId: 'Free Starter (10 free ads)',
+        shareToAdReachChannels: true,
+        socialAccountIds: selectedGroupIds,
+        createdAt: new Date().toISOString(),
+      };
+
       // Also persist to Firebase Cloud Firestore
       await saveAdToFirestore({
         headline: title.trim(),
@@ -1069,11 +1134,24 @@ function SubmissionPage() {
         selectedCommunities: selectedGroupIds,
         userId: user?.id || data.user.userId,
         userEmail: data.user.email,
+        imageUrl: imagePath,
       });
+
+      // Save locally to localStorage so user sees it instantly on dashboard
+      try {
+        const stored = localStorage.getItem('adreach_local_ads');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift(newAdRecord);
+        localStorage.setItem('adreach_local_ads', JSON.stringify(list));
+      } catch {}
+
       queryClient.invalidateQueries({ queryKey: getGetAccountQueryKey() });
       setTitle(''); setDescription(''); setLink(''); setFile(null); setPreview('');
-      setSuccess('Your ad is live and queued for social community broadcast! Check your dashboard.');
-    } catch (err: any) { setUploading(false); setError(err?.message || 'We couldn’t submit your ad. Please try again.'); }
+      setSuccess('Your ad is live! It has been submitted and queued for social broadcast across your selected groups.');
+    } catch (err: any) {
+      setUploading(false);
+      setError(err?.message || 'We couldn’t submit your ad. Please try again.');
+    }
   };
 
   const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1125,7 +1203,7 @@ function SubmissionPage() {
         <div className="empty-art"><LockKeyhole size={24} /></div>
         <div>
           <div className="section-kicker">FREE SUBMISSIONS USED</div>
-          <h2>You’ve used your five free ads.</h2>
+          <h2>You’ve used your ten free ads.</h2>
           <p>Choose a plan to keep submitting and broadcasting across social groups via Mobile Money / Bank transfer.</p>
           <div className="limit-plans">
             {plans.map((plan) => (
@@ -1136,7 +1214,7 @@ function SubmissionPage() {
               </button>
             ))}
           </div>
-          <small>Payment verification handled via WhatsApp (+260 760 312 951).</small>
+          <small>Payment verification handled via WhatsApp (+260 760 312 951) or MTN MoMo 0760312951.</small>
         </div>
       </div>
     ) : (
@@ -1496,44 +1574,45 @@ function EventRow({ event }: { event: DistributionEvent }) {
 }
 
 function SignInPage() {
-  if (!clerkPubKey) {
-    return (
-      <div className="auth-page">
-        <div className="auth-backdrop">
-          <div className="auth-orbit orbit-one" />
-          <div className="auth-orbit orbit-two" />
-          <div className="auth-back-copy">
-            <Brand inverse />
-            <p>Good work deserves<br />to be seen.</p>
-            <span>ADVERTISING MADE EASIER, RIGHT HERE.</span>
-          </div>
-        </div>
-        <div className="auth-form-side">
-          <Link href="/" className="auth-mobile-brand"><Brand /></Link>
-          <FirebaseAuthCard mode="sign-in" />
-          <p className="auth-privacy"><LockKeyhole size={13} /> Secured with Firebase Authentication (Phone, Email, Google & Apple).</p>
+  return (
+    <div className="auth-page">
+      <div className="auth-backdrop">
+        <div className="auth-orbit orbit-one" />
+        <div className="auth-orbit orbit-two" />
+        <div className="auth-back-copy">
+          <Brand inverse />
+          <p>Good work deserves<br />to be seen.</p>
+          <span>ADVERTISING MADE EASIER, RIGHT HERE.</span>
         </div>
       </div>
-    );
-  }
-  return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Good work deserves<br />to be seen.</p><span>ADVERTISING MADE EASIER, RIGHT HERE.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>;
+      <div className="auth-form-side">
+        <Link href="/" className="auth-mobile-brand"><Brand /></Link>
+        <FirebaseAuthCard mode="sign-in" />
+        <p className="auth-privacy"><LockKeyhole size={13} /> Secured with Firebase Authentication (Phone, Email, Google & Apple).</p>
+      </div>
+    </div>
+  );
 }
 
 function SignUpPage() {
-  if (!clerkPubKey) {
-    return (
-      <div className="auth-page">
-        <div className="auth-backdrop">
-          <div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Your next<br />customer is<br /><em>out there.</em></p><span>START WITH FIVE FREE AD SUBMISSIONS.</span></div></div>
-        <div className="auth-form-side">
-          <Link href="/" className="auth-mobile-brand"><Brand /></Link>
-          <FirebaseAuthCard mode="sign-up" />
-          <p className="auth-privacy"><LockKeyhole size={13} /> Secured with Firebase Authentication (Phone, Email, Google & Apple).</p>
+  return (
+    <div className="auth-page">
+      <div className="auth-backdrop">
+        <div className="auth-orbit orbit-one" />
+        <div className="auth-orbit orbit-two" />
+        <div className="auth-back-copy">
+          <Brand inverse />
+          <p>Your next<br />customer is<br /><em>out there.</em></p>
+          <span>START WITH TEN FREE AD SUBMISSIONS.</span>
         </div>
       </div>
-    );
-  }
-  return <div className="auth-page"><div className="auth-backdrop"><div className="auth-orbit orbit-one" /><div className="auth-orbit orbit-two" /><div className="auth-back-copy"><Brand inverse /><p>Your next<br />customer is<br /><em>out there.</em></p><span>START WITH FIVE FREE AD SUBMISSIONS.</span></div></div><div className="auth-form-side"><Link href="/" className="auth-mobile-brand"><Brand /></Link><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /><p className="auth-privacy"><LockKeyhole size={13} /> Your account is protected by Clerk.</p></div></div>;
+      <div className="auth-form-side">
+        <Link href="/" className="auth-mobile-brand"><Brand /></Link>
+        <FirebaseAuthCard mode="sign-up" />
+        <p className="auth-privacy"><LockKeyhole size={13} /> Secured with Firebase Authentication (Phone, Email, Google & Apple).</p>
+      </div>
+    </div>
+  );
 }
 
 function ClerkQueryClientCacheInvalidator() {

@@ -202,7 +202,7 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
         </h2>
         <p style={{ color: '#697d77', fontSize: '13px', margin: 0 }}>
           {mode === 'sign-up'
-            ? 'Start with 5 free ads broadcasted across verified Zambian groups.'
+            ? 'Start with 10 free ads broadcasted across verified Zambian groups.'
             : 'Sign in to manage your submissions and social broadcasts.'}
         </p>
       </div>
@@ -365,11 +365,11 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
         <form onSubmit={handleEmailSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {mode === 'sign-up' && (
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#1d3934', marginBottom: '5px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1d3934', marginBottom: '6px' }}>
                 Your Name or Business Name
               </label>
               <div style={{ position: 'relative' }}>
-                <User size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: '#88978e' }} />
+                <User size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#88978e' }} />
                 <input
                   type="text"
                   placeholder="e.g. Kapenta Grill & Catering"
@@ -377,12 +377,12 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
                   onChange={(e) => setDisplayName(e.target.value)}
                   style={{
                     width: '100%',
-                    height: '40px',
-                    padding: '0 12px 0 36px',
+                    height: '46px',
+                    padding: '0 12px 0 38px',
                     borderRadius: '8px',
                     border: '1px solid #d9dbce',
                     background: '#ffffff',
-                    fontSize: '13px',
+                    fontSize: '16px',
                     color: '#1d3934',
                     outline: 'none',
                   }}
@@ -392,11 +392,11 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
           )}
 
           <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#1d3934', marginBottom: '5px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1d3934', marginBottom: '6px' }}>
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <Mail size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: '#88978e' }} />
+              <Mail size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#88978e' }} />
               <input
                 type="email"
                 required
@@ -405,12 +405,12 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
-                  height: '40px',
-                  padding: '0 12px 0 36px',
+                  height: '46px',
+                  padding: '0 12px 0 38px',
                   borderRadius: '8px',
                   border: '1px solid #d9dbce',
                   background: '#ffffff',
-                  fontSize: '13px',
+                  fontSize: '16px',
                   color: '#1d3934',
                   outline: 'none',
                 }}
@@ -419,11 +419,11 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#1d3934', marginBottom: '5px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1d3934', marginBottom: '6px' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: '#88978e' }} />
+              <Lock size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#88978e' }} />
               <input
                 type="password"
                 required
@@ -432,12 +432,12 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  height: '40px',
-                  padding: '0 12px 0 36px',
+                  height: '46px',
+                  padding: '0 12px 0 38px',
                   borderRadius: '8px',
                   border: '1px solid #d9dbce',
                   background: '#ffffff',
-                  fontSize: '13px',
+                  fontSize: '16px',
                   color: '#1d3934',
                   outline: 'none',
                 }}
@@ -454,12 +454,12 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
               justifyContent: 'center',
               gap: '8px',
               width: '100%',
-              height: '44px',
+              height: '48px',
               background: '#236b58',
               border: 'none',
               borderRadius: '10px',
               color: '#ffffff',
-              fontSize: '14px',
+              fontSize: '15px',
               fontWeight: 700,
               cursor: 'pointer',
               marginTop: '4px',
@@ -478,24 +478,24 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
           {!otpSent ? (
             <form onSubmit={handleSendPhoneOtp} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#1d3934', marginBottom: '5px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#1d3934', marginBottom: '6px' }}>
                   Zambian Mobile Number
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <div style={{
-                    width: '74px',
-                    height: '40px',
+                    width: '84px',
+                    height: '46px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: '#f1f0e6',
                     border: '1px solid #d9dbce',
                     borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 600,
+                    fontSize: '14px',
+                    fontWeight: 700,
                     color: '#1d3934',
                   }}>
-                    +260
+                    🇿🇲 +260
                   </div>
                   <input
                     type="tel"
@@ -505,18 +505,18 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
                     onChange={(e) => setRawPhone(e.target.value)}
                     style={{
                       flex: 1,
-                      height: '40px',
+                      height: '46px',
                       padding: '0 12px',
                       borderRadius: '8px',
                       border: '1px solid #d9dbce',
                       background: '#ffffff',
-                      fontSize: '13px',
+                      fontSize: '16px',
                       color: '#1d3934',
                       outline: 'none',
                     }}
                   />
                 </div>
-                <small style={{ color: '#88978e', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                <small style={{ color: '#6a7d74', fontSize: '12px', marginTop: '6px', display: 'block' }}>
                   Airtel, MTN, or Zamtel number. We will send an SMS code.
                 </small>
               </div>
@@ -530,7 +530,7 @@ export function FirebaseAuthCard({ mode: initialMode, onSuccess }: FirebaseAuthC
                   justifyContent: 'center',
                   gap: '8px',
                   width: '100%',
-                  height: '44px',
+                  height: '48px',
                   background: '#236b58',
                   border: 'none',
                   borderRadius: '10px',
